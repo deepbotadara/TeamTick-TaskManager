@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
 
 // SVG Icons as components
 const DashboardIcon = () => (
@@ -56,6 +57,7 @@ const LogoutIcon = () => (
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Helper function to check if link is active
   const isActive = (path: string) => {
@@ -66,10 +68,119 @@ export default function Sidebar() {
   };
 
   const handleLogout = () => {
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
     logout();
   };
 
   return (
+    <>
+    {/* Logout Confirmation Modal */}
+    {showLogoutModal && (
+      <div className="logout-overlay" onClick={() => setShowLogoutModal(false)}>
+        <style jsx>{`
+          .logout-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: overlayIn 0.2s ease-out;
+          }
+          .logout-modal {
+            background: var(--background-secondary);
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalIn 0.25s ease-out;
+          }
+          .logout-modal-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem;
+            font-size: 1.75rem;
+          }
+          .logout-modal h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--foreground);
+            margin-bottom: 0.5rem;
+          }
+          .logout-modal p {
+            font-size: 0.9375rem;
+            color: var(--foreground-secondary);
+            margin-bottom: 1.75rem;
+            line-height: 1.5;
+          }
+          .logout-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+          }
+          .logout-btn {
+            flex: 1;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
+          .logout-btn-cancel {
+            background: var(--gray-100);
+            color: var(--foreground);
+          }
+          .logout-btn-cancel:hover {
+            background: var(--gray-200);
+          }
+          .logout-btn-confirm {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+          }
+          .logout-btn-confirm:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+          }
+          @keyframes overlayIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+          }
+        `}</style>
+        <div className="logout-modal" onClick={(e) => e.stopPropagation()}>
+          <div className="logout-modal-icon">👋</div>
+          <h3>Confirm Logout</h3>
+          <p>Are you sure you want to log out of your account?</p>
+          <div className="logout-modal-actions">
+            <button className="logout-btn logout-btn-cancel" onClick={() => setShowLogoutModal(false)}>
+              Cancel
+            </button>
+            <button className="logout-btn logout-btn-confirm" onClick={confirmLogout}>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <aside className="sidebar">
       {/* Logo */}
       <div className="sidebar-logo">
@@ -111,13 +222,15 @@ export default function Sidebar() {
         {/* Admin Section */}
         <div className="sidebar-section">
           <div className="sidebar-section-title">Administration</div>
-          <Link 
-            href="/users" 
-            className={`sidebar-link ${isActive('/users') ? 'active' : ''}`}
-          >
-            <UsersIcon />
-            <span>Team</span>
-          </Link>
+          {user?.role === 'Admin' && (
+            <Link 
+              href="/users" 
+              className={`sidebar-link ${isActive('/users') ? 'active' : ''}`}
+            >
+              <UsersIcon />
+              <span>Team</span>
+            </Link>
+          )}
           <Link 
             href="/analytics" 
             className={`sidebar-link ${isActive('/analytics') ? 'active' : ''}`}
@@ -145,5 +258,6 @@ export default function Sidebar() {
         </div>
       </nav>
     </aside>
+    </>
   );
 }

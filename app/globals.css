@@ -83,8 +83,27 @@
     --border-color: #334155;
     --card-bg: rgba(30, 30, 50, 0.8);
     --card-border: rgba(255, 255, 255, 0.1);
+    --gray-50: #1e1e36;
+    --gray-100: #252542;
+    --gray-200: #2d2d4a;
+    --gray-300: #3a3a5c;
+    --gray-400: #8b8fa3;
+    --gray-500: #a0a4b8;
+    --gray-600: #c0c4d6;
+    --gray-700: #252542;
+    --gray-800: #1e1e36;
+    --gray-900: #f1f5f9;
     --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.25);
     --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Ensure all form elements use dark backgrounds in dark mode */
+  input, textarea, select {
+    background-color: var(--gray-50) !important;
+    color: var(--foreground) !important;
+  }
+  input:focus, textarea:focus, select:focus {
+    background-color: var(--background-secondary) !important;
   }
 }
 

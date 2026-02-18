@@ -27,6 +27,12 @@ interface Activity {
   changedAt: string;
 }
 
+interface ProjectOption {
+  projectId: number;
+  projectName: string;
+  lists: { listId: number; listName: string }[];
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalTasks: 0,
@@ -37,6 +43,14 @@ export default function Dashboard() {
   const [recentTasks, setRecentTasks] = useState<Task[]>([]);
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Quick-add state
+  const [quickTitle, setQuickTitle] = useState('');
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | ''>('');
+  const [selectedListId, setSelectedListId] = useState<number | ''>('');
+  const [quickAdding, setQuickAdding] = useState(false);
+  const [quickAddMsg, setQuickAddMsg] = useState('');
 
   useEffect(() => {
     fetchDashboardData();
@@ -70,12 +84,73 @@ export default function Dashboard() {
         const tasksArr = tasksJson.data || tasksJson.tasks || tasksJson;
         setRecentTasks(Array.isArray(tasksArr) ? tasksArr.slice(0, 3) : []);
       }
+
+      // Fetch projects for quick-add
+      const projRes = await fetch('/api/projects?limit=100', { headers });
+      if (projRes.ok) {
+        const projJson = await projRes.json();
+        const projArr = projJson.data || [];
+        const mapped: ProjectOption[] = [];
+        for (const p of projArr) {
+          const pid = p.projectId || p.ProjectID;
+          const listsRes = await fetch(`/api/projects/${pid}/lists`, { headers });
+          let lists: { listId: number; listName: string }[] = [];
+          if (listsRes.ok) {
+            const listsJson = await listsRes.json();
+            lists = (listsJson.data || []).map((l: any) => ({
+              listId: l.ListID || l.listId,
+              listName: l.ListName || l.listName,
+            }));
+          }
+          mapped.push({
+            projectId: pid,
+            projectName: p.projectName || p.ProjectName,
+            lists,
+          });
+        }
+        setProjects(mapped);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleQuickAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickTitle.trim()) return;
+    if (!selectedListId) {
+      setQuickAddMsg('Please select a project and list first.');
+      setTimeout(() => setQuickAddMsg(''), 3000);
+      return;
+    }
+    setQuickAdding(true);
+    setQuickAddMsg('');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/lists/${selectedListId}/tasks`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: quickTitle.trim(), priority: 'Medium', status: 'Pending' }),
+      });
+      if (res.ok) {
+        setQuickTitle('');
+        setQuickAddMsg('Task created successfully!');
+        fetchDashboardData();
+        setTimeout(() => setQuickAddMsg(''), 3000);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setQuickAddMsg(err.error || 'Failed to create task');
+      }
+    } catch {
+      setQuickAddMsg('Error creating task');
+    } finally {
+      setQuickAdding(false);
+    }
+  };
+
+  const selectedProject = projects.find(p => p.projectId === selectedProjectId);
 
   if (loading) {
     return (
@@ -227,22 +302,28 @@ export default function Dashboard() {
           flex-direction: column;
         }
         .task-item {
-          display: flex;
+          display: grid;
+          grid-template-columns: 24px 1fr auto;
           align-items: center;
-          gap: 1rem;
-          padding: 1rem 0;
+          gap: 0.875rem;
+          padding: 0.875rem 0.75rem;
+          margin: 0.25rem -0.75rem;
           border-bottom: 1px solid var(--border-color);
           transition: all 0.2s;
+          border-radius: 10px;
+          text-decoration: none;
+          color: inherit;
         }
         .task-item:last-child {
           border-bottom: none;
         }
         .task-item:hover {
-          padding-left: 0.5rem;
+          background: var(--gray-50);
+          border-bottom-color: transparent;
         }
         .task-check {
-          width: 20px;
-          height: 20px;
+          width: 22px;
+          height: 22px;
           border: 2px solid var(--gray-300);
           border-radius: 6px;
           cursor: pointer;
@@ -250,18 +331,27 @@ export default function Dashboard() {
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
+        }
+        .task-check.checked {
+          background: linear-gradient(135deg, #11998e, #38ef7d);
+          border-color: transparent;
         }
         .task-check:hover {
           border-color: var(--primary-500);
           background: var(--primary-50);
         }
         .task-info {
-          flex: 1;
+          min-width: 0;
         }
         .task-title {
           font-weight: 600;
+          font-size: 0.9375rem;
           color: var(--foreground);
-          margin-bottom: 0.25rem;
+          margin-bottom: 0.2rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .task-meta {
           font-size: 0.75rem;
@@ -270,16 +360,38 @@ export default function Dashboard() {
           align-items: center;
           gap: 0.75rem;
         }
-        .task-badge {
-          padding: 0.25rem 0.5rem;
-          border-radius: 6px;
-          font-size: 0.6875rem;
-          font-weight: 600;
-          text-transform: uppercase;
+        .task-badges {
+          display: flex;
+          align-items: center;
+          gap: 0.375rem;
+          flex-shrink: 0;
         }
-        .badge-progress { background: var(--primary-100); color: var(--primary-700); }
-        .badge-pending { background: var(--warning-100); color: var(--warning-600); }
-        .badge-high { background: var(--danger-100); color: var(--danger-600); }
+        .task-badge {
+          padding: 0.25rem 0.625rem;
+          border-radius: 999px;
+          font-size: 0.625rem;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          white-space: nowrap;
+          line-height: 1.4;
+        }
+        .badge-status-progress { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.25); }
+        .badge-status-completed { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+        .badge-status-pending { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
+        .badge-priority-high { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.25); }
+        .badge-priority-medium { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
+        .badge-priority-low { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+        .priority-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          display: inline-block;
+          margin-right: 0.2rem;
+        }
+        .priority-dot-high { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,0.5); }
+        .priority-dot-medium { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,0.5); }
+        .priority-dot-low { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.5); }
         .activity-list {
           display: flex;
           flex-direction: column;
@@ -439,20 +551,28 @@ export default function Dashboard() {
               {recentTasks.length > 0 ? (
                 recentTasks.map((task) => (
                   <Link href={`/tasks/${task.taskId}`} key={task.taskId} className="task-item">
-                    <div className="task-check"></div>
+                    <div className={`task-check ${task.status === 'Completed' ? 'checked' : ''}`}>
+                      {task.status === 'Completed' && <span style={{ color: 'white', fontSize: '0.7rem', lineHeight: 1 }}>✓</span>}
+                    </div>
                     <div className="task-info">
                       <div className="task-title">{task.title}</div>
                       <div className="task-meta">
-                        <span>{task.projectName}</span>
-                        <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+                        <span>📁 {task.projectName}</span>
+                        <span>📅 {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</span>
                       </div>
                     </div>
-                    <span className={`task-badge ${
-                      task.status === 'In Progress' ? 'badge-progress' : 
-                      task.priority === 'High' ? 'badge-high' : 'badge-pending'
-                    }`}>
-                      {task.status}
-                    </span>
+                    <div className="task-badges">
+                      <span className={`task-badge badge-priority-${(task.priority || 'medium').toLowerCase()}`}>
+                        <span className={`priority-dot priority-dot-${(task.priority || 'medium').toLowerCase()}`}></span>
+                        {task.priority || 'Medium'}
+                      </span>
+                      <span className={`task-badge ${
+                        task.status === 'In Progress' ? 'badge-status-progress' : 
+                        task.status === 'Completed' ? 'badge-status-completed' : 'badge-status-pending'
+                      }`}>
+                        {task.status}
+                      </span>
+                    </div>
                   </Link>
                 ))
               ) : (
@@ -508,19 +628,52 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="section-body">
-          <form className="quick-add-form" onSubmit={(e) => {
-            e.preventDefault();
-            alert('Task creation feature coming soon!');
-          }}>
+          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+            <select
+              className="quick-add-input"
+              style={{ flex: '1 1 200px' }}
+              value={selectedProjectId}
+              onChange={(e) => {
+                const val = e.target.value ? Number(e.target.value) : '';
+                setSelectedProjectId(val);
+                setSelectedListId('');
+              }}
+            >
+              <option value="">Select Project</option>
+              {projects.map(p => (
+                <option key={p.projectId} value={p.projectId}>{p.projectName}</option>
+              ))}
+            </select>
+            <select
+              className="quick-add-input"
+              style={{ flex: '1 1 200px' }}
+              value={selectedListId}
+              onChange={(e) => setSelectedListId(e.target.value ? Number(e.target.value) : '')}
+              disabled={!selectedProjectId}
+            >
+              <option value="">Select List</option>
+              {selectedProject?.lists.map(l => (
+                <option key={l.listId} value={l.listId}>{l.listName}</option>
+              ))}
+            </select>
+          </div>
+          <form className="quick-add-form" onSubmit={handleQuickAdd}>
             <input
               type="text"
               className="quick-add-input"
               placeholder="What needs to be done?"
+              value={quickTitle}
+              onChange={(e) => setQuickTitle(e.target.value)}
             />
-            <button type="submit" className="quick-add-btn">
-              <span>+</span> Add Task
+            <button type="submit" className="quick-add-btn" disabled={quickAdding}>
+              <span>+</span> {quickAdding ? 'Adding...' : 'Add Task'}
             </button>
           </form>
+          {quickAddMsg && (
+            <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', fontWeight: 600, color: quickAddMsg.includes('success') ? 'var(--success-600)' : 'var(--danger-600)' }}>
+              {quickAddMsg}
+            </div>
+          )}
         </div>
       </div>
     </div>

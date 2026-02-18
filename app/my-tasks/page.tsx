@@ -354,11 +354,13 @@ export default function MyTasks() {
           background: var(--primary-200);
         }
         .btn-complete {
-          background: var(--success-100);
-          color: var(--success-700);
+          background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+          color: white;
+          box-shadow: 0 2px 8px rgba(17, 153, 142, 0.3);
         }
         .btn-complete:hover {
-          background: var(--success-200);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(17, 153, 142, 0.4);
         }
         @keyframes fadeIn {
           from { opacity: 0; }

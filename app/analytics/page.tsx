@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useAuth } from '../contexts/AuthContext';
 
 interface DashboardData {
   totalProjects: number;
@@ -27,8 +28,10 @@ interface DashboardData {
 
 export default function Analytics() {
   const router = useRouter();
+  const { user: authUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData | null>(null);
+  const isAdmin = authUser?.role === 'Admin';
 
   useEffect(() => {
     fetchAnalytics();
@@ -48,8 +51,17 @@ export default function Analytics() {
     finally { setLoading(false); }
   };
 
-  const completionRate = data && data.totalTasks > 0 ? Math.round((data.completedTasks / data.totalTasks) * 100) : 0;
+  const completionRate = data ? (isAdmin
+    ? (data.totalTasks > 0 ? Math.round((data.completedTasks / data.totalTasks) * 100) : 0)
+    : (data.myTasks.total > 0 ? Math.round((data.myTasks.completed / data.myTasks.total) * 100) : 0)
+  ) : 0;
   const myCompletionRate = data && data.myTasks.total > 0 ? Math.round((data.myTasks.completed / data.myTasks.total) * 100) : 0;
+
+  // Derive display values based on role
+  const displayTotal = data ? (isAdmin ? data.totalTasks : data.myTasks.total) : 0;
+  const displayCompleted = data ? (isAdmin ? data.completedTasks : data.myTasks.completed) : 0;
+  const displayInProgress = data ? (isAdmin ? data.inProgressTasks : data.myTasks.inProgress) : 0;
+  const displayPending = data ? (isAdmin ? data.pendingTasks : data.myTasks.pending) : 0;
 
   if (loading) {
     return (
@@ -98,15 +110,28 @@ export default function Analytics() {
         .ring-container { position: relative; width: 140px; height: 140px; }
         .ring-label { font-size: 0.875rem; color: var(--foreground-secondary); text-align: center; }
         .ring-value { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; color: var(--foreground); }
-        .deadline-list { display: flex; flex-direction: column; gap: 0.75rem; }
-        .deadline-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem; background: var(--gray-50); border-radius: 12px; transition: all 0.2s; text-decoration: none; color: inherit; }
-        .deadline-item:hover { background: var(--gray-100); transform: translateX(4px); }
-        .deadline-title { font-size: 0.9375rem; font-weight: 600; color: var(--foreground); flex: 1; }
-        .deadline-date { font-size: 0.8125rem; color: var(--foreground-secondary); }
-        .badge { padding: 0.25rem 0.625rem; border-radius: 8px; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; }
-        .badge-high { background: var(--danger-100); color: var(--danger-600); }
-        .badge-medium { background: var(--warning-100); color: var(--warning-600); }
-        .badge-low { background: var(--success-100); color: var(--success-600); }
+        .deadline-list { display: flex; flex-direction: column; gap: 0.625rem; }
+        .deadline-item { display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1rem; background: var(--gray-50); border-radius: 12px; transition: all 0.25s ease; text-decoration: none; color: inherit; border: 1px solid transparent; }
+        .deadline-item:hover { background: var(--background-secondary); border-color: var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.06); transform: translateX(4px); }
+        .deadline-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+        .deadline-icon-high { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.12)); }
+        .deadline-icon-medium { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(217,119,6,0.12)); }
+        .deadline-icon-low { background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.12)); }
+        .deadline-content { flex: 1; min-width: 0; }
+        .deadline-title { font-size: 0.875rem; font-weight: 600; color: var(--foreground); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .deadline-subtitle { font-size: 0.75rem; color: var(--foreground-secondary); margin-top: 0.125rem; display: flex; align-items: center; gap: 0.375rem; }
+        .deadline-right { display: flex; align-items: center; gap: 0.625rem; flex-shrink: 0; }
+        .deadline-date-box { text-align: center; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.25rem 0.625rem; min-width: 52px; }
+        .deadline-date-day { font-size: 0.9375rem; font-weight: 700; color: var(--foreground); line-height: 1.2; }
+        .deadline-date-month { font-size: 0.625rem; color: var(--foreground-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
+        .badge { padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+        .badge-high { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.12)); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
+        .badge-medium { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(217,119,6,0.12)); color: #d97706; border: 1px solid rgba(245,158,11,0.2); }
+        .badge-low { background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.12)); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
+        .badge-status { padding: 0.25rem 0.625rem; border-radius: 999px; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+        .badge-status-pending { background: rgba(242,153,74,0.12); color: #e68a2e; }
+        .badge-status-progress { background: rgba(99,102,241,0.12); color: #667eea; }
+        .badge-status-completed { background: rgba(17,153,142,0.12); color: #11998e; }
         .empty-state { text-align: center; padding: 2rem; color: var(--foreground-secondary); font-size: 0.875rem; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -114,36 +139,38 @@ export default function Analytics() {
 
       <div className="page-header">
         <h1>Analytics Dashboard</h1>
-        <p>Overview of your projects, tasks, and productivity</p>
+        <p>{isAdmin ? 'Overview of all projects, tasks, and team productivity' : 'Overview of your tasks and productivity'}</p>
       </div>
 
       <div className="metrics-grid">
-        <div className="metric-card">
-          <div className="metric-icon" style={{ background: 'rgba(99,102,241,0.1)' }}>📁</div>
-          <div className="metric-content">
-            <div className="metric-label">Total Projects</div>
-            <div className="metric-value">{data.totalProjects}</div>
+        {isAdmin && (
+          <div className="metric-card">
+            <div className="metric-icon" style={{ background: 'rgba(99,102,241,0.1)' }}>📁</div>
+            <div className="metric-content">
+              <div className="metric-label">Total Projects</div>
+              <div className="metric-value">{data.totalProjects}</div>
+            </div>
           </div>
-        </div>
+        )}
         <div className="metric-card">
           <div className="metric-icon" style={{ background: 'rgba(17,153,142,0.1)' }}>✅</div>
           <div className="metric-content">
             <div className="metric-label">Completed Tasks</div>
-            <div className="metric-value">{data.completedTasks}</div>
+            <div className="metric-value">{displayCompleted}</div>
           </div>
         </div>
         <div className="metric-card">
           <div className="metric-icon" style={{ background: 'rgba(99,102,241,0.1)' }}>⏳</div>
           <div className="metric-content">
             <div className="metric-label">In Progress</div>
-            <div className="metric-value">{data.inProgressTasks}</div>
+            <div className="metric-value">{displayInProgress}</div>
           </div>
         </div>
         <div className="metric-card">
           <div className="metric-icon" style={{ background: 'rgba(242,153,74,0.1)' }}>📋</div>
           <div className="metric-content">
             <div className="metric-label">Pending Tasks</div>
-            <div className="metric-value">{data.pendingTasks}</div>
+            <div className="metric-value">{displayPending}</div>
           </div>
         </div>
       </div>
@@ -151,29 +178,29 @@ export default function Analytics() {
       <div className="section-grid">
         <div className="section-card">
           <div className="section-header">
-            <div className="section-title"><span>📊</span> Task Distribution</div>
+            <div className="section-title"><span>📊</span> {isAdmin ? 'Overall Task Distribution' : 'My Task Distribution'}</div>
           </div>
           <div className="section-body">
             <div className="progress-row">
               <span className="progress-label">Completed</span>
               <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${data.totalTasks > 0 ? (data.completedTasks / data.totalTasks * 100) : 0}%`, background: 'linear-gradient(135deg, #11998e, #38ef7d)' }} />
+                <div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayCompleted / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #11998e, #38ef7d)' }} />
               </div>
-              <span className="progress-count">{data.completedTasks}</span>
+              <span className="progress-count">{displayCompleted}</span>
             </div>
             <div className="progress-row">
               <span className="progress-label">In Progress</span>
               <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${data.totalTasks > 0 ? (data.inProgressTasks / data.totalTasks * 100) : 0}%`, background: 'linear-gradient(135deg, #667eea, #764ba2)' }} />
+                <div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayInProgress / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #667eea, #764ba2)' }} />
               </div>
-              <span className="progress-count">{data.inProgressTasks}</span>
+              <span className="progress-count">{displayInProgress}</span>
             </div>
             <div className="progress-row">
               <span className="progress-label">Pending</span>
               <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${data.totalTasks > 0 ? (data.pendingTasks / data.totalTasks * 100) : 0}%`, background: 'linear-gradient(135deg, #f2994a, #f093fb)' }} />
+                <div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayPending / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #f2994a, #f093fb)' }} />
               </div>
-              <span className="progress-count">{data.pendingTasks}</span>
+              <span className="progress-count">{displayPending}</span>
             </div>
           </div>
         </div>
@@ -196,44 +223,46 @@ export default function Analytics() {
                 </svg>
                 <div className="ring-value">{completionRate}%</div>
               </div>
-              <div className="ring-label">Overall: {data.completedTasks} of {data.totalTasks} tasks completed</div>
+              <div className="ring-label">{isAdmin ? 'Overall' : 'My Tasks'}: {displayCompleted} of {displayTotal} tasks completed</div>
             </div>
           </div>
         </div>
       </div>
 
       <div className="section-grid">
-        <div className="section-card">
-          <div className="section-header">
-            <div className="section-title"><span>👤</span> My Tasks Summary</div>
+        {isAdmin && (
+          <div className="section-card">
+            <div className="section-header">
+              <div className="section-title"><span>👤</span> My Tasks Summary</div>
+            </div>
+            <div className="section-body">
+              <div className="progress-row">
+                <span className="progress-label">Completed</span>
+                <div className="progress-bar-bg">
+                  <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.completed / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #11998e, #38ef7d)' }} />
+                </div>
+                <span className="progress-count">{data.myTasks.completed}</span>
+              </div>
+              <div className="progress-row">
+                <span className="progress-label">In Progress</span>
+                <div className="progress-bar-bg">
+                  <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.inProgress / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #667eea, #764ba2)' }} />
+                </div>
+                <span className="progress-count">{data.myTasks.inProgress}</span>
+              </div>
+              <div className="progress-row">
+                <span className="progress-label">Pending</span>
+                <div className="progress-bar-bg">
+                  <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.pending / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #f2994a, #f093fb)' }} />
+                </div>
+                <span className="progress-count">{data.myTasks.pending}</span>
+              </div>
+              <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--foreground-secondary)' }}>
+                My Completion Rate: <strong style={{ color: 'var(--foreground)' }}>{myCompletionRate}%</strong>
+              </div>
+            </div>
           </div>
-          <div className="section-body">
-            <div className="progress-row">
-              <span className="progress-label">Completed</span>
-              <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.completed / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #11998e, #38ef7d)' }} />
-              </div>
-              <span className="progress-count">{data.myTasks.completed}</span>
-            </div>
-            <div className="progress-row">
-              <span className="progress-label">In Progress</span>
-              <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.inProgress / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #667eea, #764ba2)' }} />
-              </div>
-              <span className="progress-count">{data.myTasks.inProgress}</span>
-            </div>
-            <div className="progress-row">
-              <span className="progress-label">Pending</span>
-              <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.pending / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #f2994a, #f093fb)' }} />
-              </div>
-              <span className="progress-count">{data.myTasks.pending}</span>
-            </div>
-            <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--foreground-secondary)' }}>
-              My Completion Rate: <strong style={{ color: 'var(--foreground)' }}>{myCompletionRate}%</strong>
-            </div>
-          </div>
-        </div>
+        )}
 
         <div className="section-card">
           <div className="section-header">
@@ -242,13 +271,34 @@ export default function Analytics() {
           <div className="section-body">
             {data.upcomingDeadlines.length > 0 ? (
               <div className="deadline-list">
-                {data.upcomingDeadlines.map(d => (
-                  <Link key={d.taskId} href={`/tasks/${d.taskId}`} className="deadline-item">
-                    <span className="deadline-title">{d.title}</span>
-                    <span className={`badge badge-${(d.priority || 'medium').toLowerCase()}`}>{d.priority}</span>
-                    <span className="deadline-date">{d.dueDate ? new Date(d.dueDate).toLocaleDateString() : 'N/A'}</span>
-                  </Link>
-                ))}
+                {data.upcomingDeadlines.map(d => {
+                  const dueDate = d.dueDate ? new Date(d.dueDate) : null;
+                  const dayNum = dueDate ? dueDate.getDate() : '--';
+                  const monthStr = dueDate ? dueDate.toLocaleString('default', { month: 'short' }) : '';
+                  const priorityKey = (d.priority || 'medium').toLowerCase();
+                  const statusKey = d.status === 'In Progress' ? 'progress' : (d.status === 'Completed' ? 'completed' : 'pending');
+                  const priorityIcon = priorityKey === 'high' ? '🔴' : priorityKey === 'medium' ? '🟡' : '🟢';
+                  return (
+                    <Link key={d.taskId} href={`/tasks/${d.taskId}`} className="deadline-item">
+                      <div className={`deadline-icon deadline-icon-${priorityKey}`}>
+                        {priorityIcon}
+                      </div>
+                      <div className="deadline-content">
+                        <span className="deadline-title">{d.title}</span>
+                        <div className="deadline-subtitle">
+                          <span className={`badge-status badge-status-${statusKey}`}>{d.status}</span>
+                        </div>
+                      </div>
+                      <div className="deadline-right">
+                        <span className={`badge badge-${priorityKey}`}>{d.priority}</span>
+                        <div className="deadline-date-box">
+                          <div className="deadline-date-day">{dayNum}</div>
+                          <div className="deadline-date-month">{monthStr}</div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div className="empty-state">No upcoming deadlines</div>

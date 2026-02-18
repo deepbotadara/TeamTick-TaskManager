@@ -91,17 +91,25 @@ export default function Profile() {
   return (
     <div className="profile-page">
       <style jsx>{`
-        .profile-page { animation: fadeIn 0.5s ease-out; max-width: 800px; }
+        .profile-page { animation: fadeIn 0.5s ease-out; }
         .page-header { margin-bottom: 2rem; }
         .page-header h1 { font-size: 1.875rem; font-weight: 700; color: var(--foreground); margin-bottom: 0.5rem; }
         .page-header p { color: var(--foreground-secondary); }
-        .profile-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 2rem; display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; position: relative; overflow: hidden; }
+        .profile-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 2rem 2.5rem; display: flex; align-items: center; gap: 1.5rem; margin-bottom: 2rem; position: relative; overflow: hidden; }
+        .profile-header::before { content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; background: rgba(255,255,255,0.06); border-radius: 50%; }
+        .profile-header::after { content: ''; position: absolute; bottom: -30%; left: 40%; width: 200px; height: 200px; background: rgba(255,255,255,0.04); border-radius: 50%; }
         .profile-avatar { width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem; font-weight: 700; border: 4px solid rgba(255,255,255,0.3); position: relative; z-index: 1; }
-        .profile-info { position: relative; z-index: 1; color: white; }
+        .profile-info { position: relative; z-index: 1; color: white; flex: 1; }
         .profile-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
         .profile-email { opacity: 0.9; margin-bottom: 0.5rem; }
         .profile-role { display: inline-block; padding: 0.375rem 0.875rem; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); border-radius: 999px; font-size: 0.8125rem; font-weight: 600; margin-right: 0.5rem; }
-        .section-card { background: var(--background-secondary); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 1.5rem; }
+        .profile-stats { display: flex; gap: 2rem; margin-left: auto; position: relative; z-index: 1; }
+        .profile-stat-item { text-align: center; color: white; }
+        .profile-stat-num { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+        .profile-stat-text { font-size: 0.75rem; opacity: 0.85; }
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 900px) { .profile-grid { grid-template-columns: 1fr; } .profile-stats { display: none; } }
+        .section-card { background: var(--background-secondary); border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden; }
         .section-header { padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border-color); }
         .section-title { font-size: 1rem; font-weight: 700; color: var(--foreground); display: flex; align-items: center; gap: 0.5rem; }
         .section-body { padding: 1.5rem; }
@@ -137,83 +145,95 @@ export default function Profile() {
           <div className="profile-email">{email}</div>
           <div>{roles.map(r => <span key={r} className="profile-role">{r}</span>)}</div>
         </div>
-      </div>
-
-      <div className="section-card">
-        <div className="section-header">
-          <div className="section-title"><span>ℹ️</span> Account Information</div>
-        </div>
-        <div className="section-body">
-          <div className="info-row">
-            <span className="info-label">Username</span>
-            <span className="info-value">{username}</span>
+        <div className="profile-stats">
+          <div className="profile-stat-item">
+            <div className="profile-stat-num">{roles.length}</div>
+            <div className="profile-stat-text">Roles</div>
           </div>
-          <div className="info-row">
-            <span className="info-label">Email</span>
-            <span className="info-value">{email}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Roles</span>
-            <span className="info-value">{roles.join(', ') || 'N/A'}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Member Since</span>
-            <span className="info-value">{createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}</span>
+          <div className="profile-stat-item">
+            <div className="profile-stat-num">{createdAt ? new Date(createdAt).getFullYear() : '--'}</div>
+            <div className="profile-stat-text">Joined</div>
           </div>
         </div>
       </div>
 
-      <div className="section-card">
-        <div className="section-header">
-          <div className="section-title"><span>✏️</span> Edit Profile</div>
-        </div>
-        <div className="section-body">
-          <form onSubmit={handleProfileSubmit}>
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Username</label>
-                <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Email Address</label>
-                <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
-              </div>
+      <div className="profile-grid">
+        <div className="section-card">
+          <div className="section-header">
+            <div className="section-title"><span>ℹ️</span> Account Information</div>
+          </div>
+          <div className="section-body">
+            <div className="info-row">
+              <span className="info-label">Username</span>
+              <span className="info-value">{username}</span>
             </div>
-            {profileMsg && <p className="msg-success">{profileMsg}</p>}
-            {profileErr && <p className="msg-error">{profileErr}</p>}
-            <div className="form-actions">
-              <button type="submit" className="btn btn-primary">Save Changes</button>
+            <div className="info-row">
+              <span className="info-label">Email</span>
+              <span className="info-value">{email}</span>
             </div>
-          </form>
+            <div className="info-row">
+              <span className="info-label">Roles</span>
+              <span className="info-value">{roles.join(', ') || 'N/A'}</span>
+            </div>
+            <div className="info-row">
+              <span className="info-label">Member Since</span>
+              <span className="info-value">{createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}</span>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <div className="section-card">
-        <div className="section-header">
-          <div className="section-title"><span>🔒</span> Change Password</div>
+        <div className="section-card">
+          <div className="section-header">
+            <div className="section-title"><span>✏️</span> Edit Profile</div>
+          </div>
+          <div className="section-body">
+            <form onSubmit={handleProfileSubmit}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label className="form-label">Username</label>
+                  <input className="form-input" value={username} onChange={e => setUsername(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Email Address</label>
+                  <input type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required />
+                </div>
+              </div>
+              {profileMsg && <p className="msg-success">{profileMsg}</p>}
+              {profileErr && <p className="msg-error">{profileErr}</p>}
+              <div className="form-actions">
+                <button type="submit" className="btn btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div className="section-body">
-          <form onSubmit={handlePasswordSubmit}>
-            <div className="form-grid">
-              <div className="form-group full-width">
-                <label className="form-label">Current Password</label>
-                <input type="password" className="form-input" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+
+        <div className="section-card" style={{ gridColumn: '1 / -1' }}>
+          <div className="section-header">
+            <div className="section-title"><span>🔒</span> Change Password</div>
+          </div>
+          <div className="section-body">
+            <form onSubmit={handlePasswordSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.25rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Current Password</label>
+                  <input type="password" className="form-input" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">New Password</label>
+                  <input type="password" className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Confirm New Password</label>
+                  <input type="password" className="form-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">New Password</label>
-                <input type="password" className="form-input" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+              {passwordMsg && <p className="msg-success">{passwordMsg}</p>}
+              {passwordErr && <p className="msg-error">{passwordErr}</p>}
+              <div className="form-actions">
+                <button type="submit" className="btn btn-primary">Update Password</button>
               </div>
-              <div className="form-group">
-                <label className="form-label">Confirm New Password</label>
-                <input type="password" className="form-input" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-              </div>
-            </div>
-            {passwordMsg && <p className="msg-success">{passwordMsg}</p>}
-            {passwordErr && <p className="msg-error">{passwordErr}</p>}
-            <div className="form-actions">
-              <button type="submit" className="btn btn-primary">Update Password</button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
     </div>

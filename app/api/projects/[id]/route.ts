@@ -1,6 +1,17 @@
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
-import { authMiddleware, unauthorizedResponse, notFoundResponse, badRequestResponse, successResponse, serverErrorResponse } from '@/lib/middleware';
+import { authMiddleware, unauthorizedResponse, notFoundResponse, badRequestResponse, forbiddenResponse, successResponse, serverErrorResponse } from '@/lib/middleware';
+
+// Helper to check if user is admin
+async function isAdmin(userId: number): Promise<boolean> {
+  const adminRole = await prisma.userRole.findFirst({
+    where: {
+      UserID: userId,
+      role: { RoleName: 'Admin' }
+    }
+  });
+  return !!adminRole;
+}
 
 // GET /api/projects/[id] - Get project by ID
 export async function GET(
@@ -9,7 +20,7 @@ export async function GET(
 ) {
     try {
         const auth = await authMiddleware(request);
-        if (!auth.authenticated) {
+        if (!auth.authenticated || !auth.user) {
             return unauthorizedResponse(auth.error);
         }
 
@@ -44,6 +55,12 @@ export async function GET(
 
         if (!project) {
             return notFoundResponse('Project not found');
+        }
+
+        // Non-admin users can only view their own projects
+        const userIsAdmin = await isAdmin(auth.user.userId);
+        if (!userIsAdmin && project.CreatedBy !== auth.user.userId) {
+            return forbiddenResponse('You do not have access to this project');
         }
 
         // Transform task lists format
@@ -103,6 +120,12 @@ export async function PUT(
             return notFoundResponse('Project not found');
         }
 
+        // Non-admin users can only edit their own projects
+        const userIsAdmin = await isAdmin(auth.user.userId);
+        if (!userIsAdmin && existingProject.CreatedBy !== auth.user.userId) {
+            return forbiddenResponse('You do not have permission to edit this project');
+        }
+
         // Update project with Prisma
         await prisma.project.update({
             where: { ProjectID: projectId },
@@ -148,6 +171,12 @@ export async function DELETE(
 
         if (!project) {
             return notFoundResponse('Project not found');
+        }
+
+        // Non-admin users can only delete their own projects
+        const userIsAdminDel = await isAdmin(auth.user.userId);
+        if (!userIsAdminDel && project.CreatedBy !== auth.user.userId) {
+            return forbiddenResponse('You do not have permission to delete this project');
         }
 
         // Delete project (CASCADE will delete related task lists and tasks)

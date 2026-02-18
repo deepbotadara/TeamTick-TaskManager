@@ -100,6 +100,9 @@ export async function POST(
             return badRequestResponse('Invalid status');
         }
 
+        // Auto-assign to the logged-in user if no assignee specified
+        const finalAssignedTo = assignedTo || auth.user.userId;
+
         // Create task and log history in transaction
         const task = await prisma.$transaction(async (tx) => {
             const newTask = await tx.task.create({
@@ -110,7 +113,7 @@ export async function POST(
                     Priority: priority || 'Medium',
                     Status: status || 'Pending',
                     DueDate: dueDate ? new Date(dueDate) : null,
-                    AssignedTo: assignedTo || null
+                    AssignedTo: finalAssignedTo
                 }
             });
 

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
+import { useAuth } from '@/app/contexts/AuthContext';
+
 interface UserOption {
   userId: number;
   username: string;
@@ -15,6 +17,8 @@ export default function TaskCreate() {
   const router = useRouter();
   const projectId = params.id as string;
   const listId = params.listId as string;
+  const { user: authUser } = useAuth();
+  const isAdmin = authUser?.role === 'Admin';
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -35,18 +39,19 @@ export default function TaskCreate() {
     if (!token) { router.push('/login'); return; }
     const headers = { 'Authorization': `Bearer ${token}` };
 
-    const [usersRes, projectRes] = await Promise.all([
-      fetch('/api/users', { headers }),
-      fetch(`/api/projects/${projectId}`, { headers })
-    ]);
-
-    if (usersRes.ok) {
-      const usersData = await usersRes.json();
-      setUsers(usersData.data || []);
-    }
+    const projectRes = await fetch(`/api/projects/${projectId}`, { headers });
     if (projectRes.ok) {
       const projectData = await projectRes.json();
       setProjectName(projectData.ProjectName || '');
+    }
+
+    // Only admin can assign tasks to other users
+    if (isAdmin) {
+      const usersRes = await fetch('/api/users', { headers });
+      if (usersRes.ok) {
+        const usersData = await usersRes.json();
+        setUsers(usersData.data || []);
+      }
     }
   };
 
@@ -126,10 +131,6 @@ export default function TaskCreate() {
         .btn-secondary:hover { border-color: var(--primary-500); color: var(--primary-500); }
         .error-msg { background: var(--danger-50); color: var(--danger-600); padding: 0.75rem 1rem; border-radius: 10px; margin-bottom: 1rem; font-size: 0.875rem; font-weight: 500; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @media (prefers-color-scheme: dark) {
-          .form-input, .form-select, .priority-option { background: var(--gray-800); }
-          .form-input:focus, .form-select:focus { background: var(--background-secondary); }
-        }
       `}</style>
 
       <nav className="breadcrumb">
@@ -176,15 +177,17 @@ export default function TaskCreate() {
               <label className="form-label">Due Date</label>
               <input type="date" className="form-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
-            <div className="form-group">
-              <label className="form-label">Assign To</label>
-              <select className="form-select" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
-                <option value="">Select assignee...</option>
-                {users.map(u => (
-                  <option key={u.userId} value={u.userId}>{u.username}</option>
-                ))}
-              </select>
-            </div>
+            {isAdmin && (
+              <div className="form-group">
+                <label className="form-label">Assign To</label>
+                <select className="form-select" value={assignee} onChange={(e) => setAssignee(e.target.value)}>
+                  <option value="">Select assignee...</option>
+                  {users.map(u => (
+                    <option key={u.userId} value={u.userId}>{u.username}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="form-actions">

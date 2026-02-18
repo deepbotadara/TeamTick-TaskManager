@@ -2,11 +2,22 @@ import { NextRequest } from 'next/server';
 import prisma from '@/lib/prisma';
 import { authMiddleware, unauthorizedResponse, badRequestResponse, successResponse, serverErrorResponse } from '@/lib/middleware';
 
-// GET /api/projects - Get all projects
+// Helper to check if user is admin
+async function isAdmin(userId: number): Promise<boolean> {
+  const adminRole = await prisma.userRole.findFirst({
+    where: {
+      UserID: userId,
+      role: { RoleName: 'Admin' }
+    }
+  });
+  return !!adminRole;
+}
+
+// GET /api/projects - Get all projects (admin sees all, user sees own)
 export async function GET(request: NextRequest) {
     try {
         const auth = await authMiddleware(request);
-        if (!auth.authenticated) {
+        if (!auth.authenticated || !auth.user) {
             return unauthorizedResponse(auth.error);
         }
 
@@ -16,8 +27,15 @@ export async function GET(request: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '10');
         const skip = (page - 1) * limit;
 
-        // Build where clause
-        const where = userId ? { CreatedBy: parseInt(userId) } : {};
+        const userIsAdmin = await isAdmin(auth.user.userId);
+
+        // Build where clause: admin sees all, regular user sees only their own projects
+        let where: any = {};
+        if (userId) {
+            where = { CreatedBy: parseInt(userId) };
+        } else if (!userIsAdmin) {
+            where = { CreatedBy: auth.user.userId };
+        }
 
         // Get projects with Prisma
         const projects = await prisma.project.findMany({

@@ -227,6 +227,7 @@ export default function Projects() {
           text-decoration: none;
           color: inherit;
           display: block;
+          position: relative;
         }
         .project-card:nth-child(1) { animation-delay: 0.05s; }
         .project-card:nth-child(2) { animation-delay: 0.1s; }
@@ -234,32 +235,80 @@ export default function Projects() {
         .project-card:nth-child(4) { animation-delay: 0.2s; }
         .project-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+          border-color: transparent;
         }
         .project-header {
-          height: 8px;
+          height: 6px;
+          border-radius: 0;
         }
         .project-body {
           padding: 1.5rem;
         }
-        .project-name {
+        .project-title-row {
+          display: flex;
+          align-items: center;
+          gap: 0.875rem;
+          margin-bottom: 0.75rem;
+        }
+        .project-icon {
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
           font-size: 1.25rem;
           font-weight: 700;
+          flex-shrink: 0;
+        }
+        .project-name {
+          font-size: 1.125rem;
+          font-weight: 700;
           color: var(--foreground);
-          margin-bottom: 0.5rem;
+          margin: 0;
+          line-height: 1.3;
         }
         .project-desc {
-          font-size: 0.875rem;
+          font-size: 0.8125rem;
           color: var(--foreground-secondary);
-          line-height: 1.5;
+          line-height: 1.6;
           margin-bottom: 1.25rem;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
+          min-height: 2.6em;
+        }
+        .project-stats-row {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 1.25rem;
+        }
+        .project-stat {
+          flex: 1;
+          background: var(--gray-50);
+          border-radius: 10px;
+          padding: 0.625rem 0.75rem;
+          text-align: center;
+        }
+        .project-stat-value {
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: var(--foreground);
+          line-height: 1;
+          margin-bottom: 0.2rem;
+        }
+        .project-stat-label {
+          font-size: 0.6875rem;
+          color: var(--foreground-secondary);
+          font-weight: 500;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
         }
         .project-progress {
-          margin-bottom: 1.25rem;
+          margin-bottom: 0;
         }
         .progress-header {
           display: flex;
@@ -278,7 +327,7 @@ export default function Projects() {
           color: var(--foreground);
         }
         .progress-bar-bg {
-          height: 8px;
+          height: 6px;
           background: var(--gray-200);
           border-radius: 999px;
           overflow: hidden;
@@ -286,41 +335,27 @@ export default function Projects() {
         .progress-bar-fill {
           height: 100%;
           border-radius: 999px;
-          transition: width 0.5s ease;
+          transition: width 0.8s ease;
         }
-        .project-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-        .project-members {
-          display: flex;
-        }
-        .member-avatar {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 0.75rem;
-          font-weight: 600;
-          margin-left: -8px;
-          border: 2px solid var(--background-secondary);
-        }
-        .member-avatar:first-child {
-          margin-left: 0;
-        }
-        .member-more {
-          background: var(--gray-200);
-          color: var(--gray-600);
-        }
-        .project-tasks {
-          font-size: 0.875rem;
+        .empty-projects {
+          text-align: center;
+          padding: 4rem 2rem;
           color: var(--foreground-secondary);
-          font-weight: 500;
+        }
+        .empty-projects-icon {
+          font-size: 3rem;
+          margin-bottom: 1rem;
+          opacity: 0.5;
+        }
+        .empty-projects h3 {
+          font-size: 1.25rem;
+          font-weight: 600;
+          color: var(--foreground);
+          margin-bottom: 0.5rem;
+        }
+        .empty-projects p {
+          max-width: 400px;
+          margin: 0 auto;
         }
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -375,18 +410,39 @@ export default function Projects() {
         </div>
       </div>      {/* Projects Grid */}
       <div className="projects-grid">
-        {projects.map((project) => {
+        {projects.length > 0 ? projects.map((project) => {
           const totalTasks = getTotalTasks(project);
           const completedTasks = getCompletedCount(project);
           const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
           const projectColor = getProjectColor(project.color);
+          const pendingTasks = totalTasks - completedTasks;
           
           return (
             <Link href={`/projects/${project.id}`} key={project.id} className="project-card">
-              <div className="project-header" style={{ background: projectColor }}></div>
+              <div className="project-header" style={{ background: `linear-gradient(135deg, ${projectColor}, ${projectColor}dd)` }}></div>
               <div className="project-body">
-                <h3 className="project-name">{project.name}</h3>
-                <p className="project-desc">{project.description || 'No description available'}</p>
+                <div className="project-title-row">
+                  <div className="project-icon" style={{ background: `linear-gradient(135deg, ${projectColor}, ${projectColor}cc)` }}>
+                    {project.name.charAt(0).toUpperCase()}
+                  </div>
+                  <h3 className="project-name">{project.name}</h3>
+                </div>
+                <p className="project-desc">{project.description || 'No description added yet'}</p>
+
+                <div className="project-stats-row">
+                  <div className="project-stat">
+                    <div className="project-stat-value">{totalTasks}</div>
+                    <div className="project-stat-label">Total</div>
+                  </div>
+                  <div className="project-stat">
+                    <div className="project-stat-value" style={{ color: 'var(--success-600)' }}>{completedTasks}</div>
+                    <div className="project-stat-label">Done</div>
+                  </div>
+                  <div className="project-stat">
+                    <div className="project-stat-value" style={{ color: 'var(--warning-600)' }}>{pendingTasks}</div>
+                    <div className="project-stat-label">Pending</div>
+                  </div>
+                </div>
 
                 <div className="project-progress">
                   <div className="progress-header">
@@ -396,21 +452,20 @@ export default function Projects() {
                   <div className="progress-bar-bg">
                     <div
                       className="progress-bar-fill"
-                      style={{ width: `${progress}%`, background: projectColor }}
+                      style={{ width: `${progress}%`, background: `linear-gradient(135deg, ${projectColor}, ${projectColor}bb)` }}
                     ></div>
                   </div>
-                </div>
-
-                <div className="project-footer">
-                  <div className="project-members">
-                    <div className="member-avatar">T</div>
-                  </div>
-                  <span className="project-tasks">{completedTasks}/{totalTasks} tasks</span>
                 </div>
               </div>
             </Link>
           );
-        })}
+        }) : (
+          <div className="empty-projects" style={{ gridColumn: '1 / -1' }}>
+            <div className="empty-projects-icon">📁</div>
+            <h3>No projects yet</h3>
+            <p>Create your first project to get started organizing your tasks.</p>
+          </div>
+        )}
       </div>
     </div>
   );

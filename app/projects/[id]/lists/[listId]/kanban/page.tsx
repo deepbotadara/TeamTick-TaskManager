@@ -125,14 +125,14 @@ export default function KanbanBoard() {
         .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3); }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4); }
         .kanban-container { display: flex; gap: 1.5rem; overflow-x: auto; padding-bottom: 2rem; }
-        .kanban-column { flex: 0 0 340px; background: var(--gray-100); border-radius: 16px; display: flex; flex-direction: column; max-height: calc(100vh - 280px); animation: fadeInUp 0.5s ease-out backwards; }
+        .kanban-column { flex: 0 0 340px; background: var(--background-secondary); border-radius: 16px; display: flex; flex-direction: column; max-height: calc(100vh - 280px); animation: fadeInUp 0.5s ease-out backwards; border: 1px solid var(--border-color); }
         .kanban-column:nth-child(1) { animation-delay: 0.1s; }
         .kanban-column:nth-child(2) { animation-delay: 0.2s; }
         .kanban-column:nth-child(3) { animation-delay: 0.3s; }
         .column-header { padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; }
         .column-title { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1rem; color: var(--foreground); }
         .column-dot { width: 12px; height: 12px; border-radius: 50%; }
-        .column-count { background: var(--gray-200); color: var(--gray-600); padding: 0.25rem 0.625rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+        .column-count { background: var(--gray-200); color: var(--foreground-secondary); padding: 0.25rem 0.625rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
         .column-cards { flex: 1; overflow-y: auto; padding: 0 1rem 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
         .task-card { background: var(--background-secondary); border-radius: 12px; padding: 1rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); border: 1px solid var(--border-color); transition: all 0.2s ease; text-decoration: none; color: inherit; display: block; }
         .task-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08); }
@@ -155,10 +155,7 @@ export default function KanbanBoard() {
         .empty-column { text-align: center; padding: 2rem 1rem; color: var(--foreground-secondary); font-size: 0.875rem; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        @media (prefers-color-scheme: dark) {
-          .kanban-column { background: var(--gray-800); }
-          .column-count { background: var(--gray-700); color: var(--gray-300); }
-        }
+
       `}</style>
 
       <nav className="breadcrumb">

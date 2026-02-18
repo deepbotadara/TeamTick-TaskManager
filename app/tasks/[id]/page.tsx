@@ -253,7 +253,7 @@ export default function TaskDetail() {
         .modal-btn-secondary { background: var(--gray-100); color: var(--foreground); }
         .empty-state { text-align: center; padding: 1.5rem; color: var(--foreground-secondary); font-size: 0.875rem; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @media (prefers-color-scheme: dark) { .comment-content { background: var(--gray-800); } }
+
       `}</style>
 
       {/* Edit Modal */}

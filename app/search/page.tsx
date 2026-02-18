@@ -20,44 +20,51 @@ interface Task {
 
 export default function TaskSearch() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
   const [results, setResults] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+  const handleSearch = async (e?: React.FormEvent, overrides?: { query?: string; status?: string; priority?: string }) => {
+    if (e) e.preventDefault();
+
+    const q = overrides?.query ?? searchQuery;
+    const s = overrides?.status ?? statusFilter;
+    const p = overrides?.priority ?? priorityFilter;
+
+    if (!q.trim() && !s && !p) return;
 
     setIsLoading(true);
     setHasSearched(true);
 
     try {
       const token = localStorage.getItem('token');
-      const params = new URLSearchParams({ query: searchQuery });
+      const params = new URLSearchParams();
+      if (q.trim()) params.append('query', q.trim());
+      if (s) params.append('status', s);
+      if (p) params.append('priority', p);
       
-      const response = await fetch(`/api/tasks/my-tasks?${params}`, {
+      const response = await fetch(`/api/tasks/search?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
-      });      if (response.ok) {
+      });
+
+      if (response.ok) {
         const json = await response.json();
-        const tasksArr = json.data || json.tasks || json;
-        const allTasks = (Array.isArray(tasksArr) ? tasksArr : []).map((t: any) => ({
-          id: t.taskId || t.TaskID || t.id,
-          title: t.title || t.Title,
-          description: t.description || t.Description,
-          priority: t.priority || t.Priority,
-          status: t.status || t.Status,
-          dueDate: t.dueDate || t.DueDate,
-          project: { name: t.project?.projectName || t.projectName || '' },
-          assignee: { name: t.assignee?.name || '' },
+        const tasksArr = json.data || [];
+        const mapped = (Array.isArray(tasksArr) ? tasksArr : []).map((t: any) => ({
+          id: t.taskId || t.id,
+          title: t.title || '',
+          description: t.description || null,
+          priority: t.priority || 'Medium',
+          status: t.status || 'Pending',
+          dueDate: t.dueDate || null,
+          project: { name: t.project?.projectName || '' },
+          assignee: { name: t.assignedTo?.username || '' },
         }));
-        // Filter tasks by search query in title or description
-        const filtered = allTasks.filter((task: Task) =>
-          task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          task.description?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setResults(filtered);
+        setResults(mapped);
       }
     } catch (error) {
       console.error('Search error:', error);
@@ -425,52 +432,39 @@ export default function TaskSearch() {
         <div className="advanced-filters">
           <div className="filter-group">
             <label className="filter-label">Priority</label>
-            <select className="filter-select">
-              <option>All Priorities</option>
-              <option>High</option>
-              <option>Medium</option>
-              <option>Low</option>
-            </select>
-          </div>
-          <div className="filter-group">
-            <label className="filter-label">Assignee</label>
-            <select className="filter-select">
-              <option>All Assignees</option>
-              <option>Alice</option>
-              <option>Bob</option>
-              <option>Carol</option>
+            <select className="filter-select" value={priorityFilter} onChange={(e) => { const val = e.target.value; setPriorityFilter(val); handleSearch(undefined, { priority: val, status: statusFilter, query: searchQuery }); }}>
+              <option value="">All Priorities</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
             </select>
           </div>
           <div className="filter-group">
             <label className="filter-label">Status</label>
-            <select className="filter-select">
-              <option>All Statuses</option>
-              <option>Pending</option>
-              <option>In Progress</option>
-              <option>Completed</option>
+            <select className="filter-select" value={statusFilter} onChange={(e) => { const val = e.target.value; setStatusFilter(val); handleSearch(undefined, { status: val, priority: priorityFilter, query: searchQuery }); }}>
+              <option value="">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
             </select>
-          </div>
-          <div className="filter-group">
-            <label className="filter-label">Due Date</label>
-            <input type="date" className="filter-input" />
           </div>
         </div>
       </div>
 
-      {/* Saved Searches */}
+      {/* Quick Filter Chips */}
       <div className="saved-searches">
-        <div className="saved-search-chip">
+        <button className="saved-search-chip" type="button" onClick={() => { setPriorityFilter('High'); setStatusFilter(''); setSearchQuery(''); handleSearch(undefined, { priority: 'High', status: '', query: '' }); }}>
           <span>⭐</span> High Priority Tasks
-        </div>
-        <div className="saved-search-chip">
-          <span>📅</span> Due This Week
-        </div>
-        <div className="saved-search-chip">
-          <span>👤</span> My Assigned Tasks
-        </div>
-        <div className="saved-search-chip">
-          <span>🏷️</span> Website Redesign
-        </div>
+        </button>
+        <button className="saved-search-chip" type="button" onClick={() => { setStatusFilter('In Progress'); setPriorityFilter(''); setSearchQuery(''); handleSearch(undefined, { status: 'In Progress', priority: '', query: '' }); }}>
+          <span>⏳</span> In Progress
+        </button>
+        <button className="saved-search-chip" type="button" onClick={() => { setStatusFilter('Pending'); setPriorityFilter(''); setSearchQuery(''); handleSearch(undefined, { status: 'Pending', priority: '', query: '' }); }}>
+          <span>📋</span> Pending Tasks
+        </button>
+        <button className="saved-search-chip" type="button" onClick={() => { setStatusFilter('Completed'); setPriorityFilter(''); setSearchQuery(''); handleSearch(undefined, { status: 'Completed', priority: '', query: '' }); }}>
+          <span>✅</span> Completed
+        </button>
       </div>      {/* Results Container */}
       <div className="results-container">
         <div className="results-header">
