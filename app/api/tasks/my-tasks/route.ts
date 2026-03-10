@@ -13,6 +13,8 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status');
         const priority = searchParams.get('priority');
+        const dueDateFrom = searchParams.get('dueDateFrom');
+        const dueDateTo = searchParams.get('dueDateTo');
 
         // Build where clause
         const where: any = {
@@ -25,6 +27,12 @@ export async function GET(request: NextRequest) {
 
         if (priority) {
             where.Priority = priority;
+        }
+
+        if (dueDateFrom || dueDateTo) {
+            where.DueDate = {};
+            if (dueDateFrom) where.DueDate.gte = new Date(dueDateFrom);
+            if (dueDateTo) where.DueDate.lte = new Date(dueDateTo);
         }
 
         // Get tasks with Prisma

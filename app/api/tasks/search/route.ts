@@ -4,13 +4,13 @@ import { authMiddleware, unauthorizedResponse, successResponse, serverErrorRespo
 
 // Helper to check if user is admin
 async function isAdmin(userId: number): Promise<boolean> {
-  const adminRole = await prisma.userRole.findFirst({
-    where: {
-      UserID: userId,
-      role: { RoleName: 'Admin' }
-    }
-  });
-  return !!adminRole;
+    const adminRole = await prisma.userRole.findFirst({
+        where: {
+            UserID: userId,
+            role: { RoleName: 'Admin' }
+        }
+    });
+    return !!adminRole;
 }
 
 // GET /api/tasks/search - Search tasks (scoped to user unless admin)
@@ -25,6 +25,9 @@ export async function GET(request: NextRequest) {
         const query = searchParams.get('query') || '';
         const status = searchParams.get('status');
         const priority = searchParams.get('priority');
+        const assigneeId = searchParams.get('assignee');
+        const dueDateFrom = searchParams.get('dueDateFrom');
+        const dueDateTo = searchParams.get('dueDateTo');
 
         const userIsAdmin = await isAdmin(auth.user.userId);
 
@@ -39,7 +42,14 @@ export async function GET(request: NextRequest) {
                     ]
                 }] : []),
                 ...(status ? [{ Status: status }] : []),
-                ...(priority ? [{ Priority: priority }] : [])
+                ...(priority ? [{ Priority: priority }] : []),
+                ...(assigneeId ? [{ AssignedTo: parseInt(assigneeId) }] : []),
+                ...(dueDateFrom || dueDateTo ? [{
+                    DueDate: {
+                        ...(dueDateFrom ? { gte: new Date(dueDateFrom) } : {}),
+                        ...(dueDateTo ? { lte: new Date(dueDateTo) } : {})
+                    }
+                }] : [])
             ]
         };
 

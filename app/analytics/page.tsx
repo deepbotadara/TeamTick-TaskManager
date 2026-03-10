@@ -5,25 +5,35 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
 
+interface TeamWorkloadItem {
+  userId: number;
+  username: string;
+  total: number;
+  completed: number;
+  inProgress: number;
+  pending: number;
+}
+
+interface ProjectProgressItem {
+  projectId: number;
+  projectName: string;
+  total: number;
+  completed: number;
+  inProgress: number;
+  pending: number;
+  completionRate: number;
+}
+
 interface DashboardData {
   totalProjects: number;
   totalTasks: number;
   completedTasks: number;
   pendingTasks: number;
   inProgressTasks: number;
-  myTasks: {
-    total: number;
-    completed: number;
-    pending: number;
-    inProgress: number;
-  };
-  upcomingDeadlines: {
-    taskId: number;
-    title: string;
-    dueDate: string;
-    priority: string;
-    status: string;
-  }[];
+  myTasks: { total: number; completed: number; pending: number; inProgress: number; };
+  upcomingDeadlines: { taskId: number; title: string; dueDate: string; priority: string; status: string; }[];
+  teamWorkload: TeamWorkloadItem[];
+  projectProgress: ProjectProgressItem[];
 }
 
 export default function Analytics() {
@@ -54,13 +64,8 @@ export default function Analytics() {
     finally { setLoading(false); }
   };
 
-  const completionRate = data ? (isAdmin
-    ? (data.totalTasks > 0 ? Math.round((data.completedTasks / data.totalTasks) * 100) : 0)
-    : (data.myTasks.total > 0 ? Math.round((data.myTasks.completed / data.myTasks.total) * 100) : 0)
-  ) : 0;
+  const completionRate = data ? (data.totalTasks > 0 ? Math.round((data.completedTasks / data.totalTasks) * 100) : 0) : 0;
   const myCompletionRate = data && data.myTasks.total > 0 ? Math.round((data.myTasks.completed / data.myTasks.total) * 100) : 0;
-
-  // Derive display values based on role
   const displayTotal = data ? (isAdmin ? data.totalTasks : data.myTasks.total) : 0;
   const displayCompleted = data ? (isAdmin ? data.completedTasks : data.myTasks.completed) : 0;
   const displayInProgress = data ? (isAdmin ? data.inProgressTasks : data.myTasks.inProgress) : 0;
@@ -117,24 +122,40 @@ export default function Analytics() {
         .deadline-item { display: flex; align-items: center; gap: 0.875rem; padding: 0.875rem 1rem; background: var(--gray-50); border-radius: 12px; transition: all 0.25s ease; text-decoration: none; color: inherit; border: 1px solid transparent; }
         .deadline-item:hover { background: var(--background-secondary); border-color: var(--border-color); box-shadow: 0 4px 16px rgba(0,0,0,0.06); transform: translateX(4px); }
         .deadline-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
-        .deadline-icon-high { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.12)); }
-        .deadline-icon-medium { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(217,119,6,0.12)); }
-        .deadline-icon-low { background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.12)); }
         .deadline-content { flex: 1; min-width: 0; }
         .deadline-title { font-size: 0.875rem; font-weight: 600; color: var(--foreground); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .deadline-subtitle { font-size: 0.75rem; color: var(--foreground-secondary); margin-top: 0.125rem; display: flex; align-items: center; gap: 0.375rem; }
-        .deadline-right { display: flex; align-items: center; gap: 0.625rem; flex-shrink: 0; }
+        .deadline-subtitle { font-size: 0.75rem; color: var(--foreground-secondary); margin-top: 0.125rem; }
+        .deadline-right { flex-shrink: 0; }
         .deadline-date-box { text-align: center; background: var(--background-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.25rem 0.625rem; min-width: 52px; }
         .deadline-date-day { font-size: 0.9375rem; font-weight: 700; color: var(--foreground); line-height: 1.2; }
         .deadline-date-month { font-size: 0.625rem; color: var(--foreground-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em; }
         .badge { padding: 0.3rem 0.75rem; border-radius: 999px; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
-        .badge-high { background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.12)); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
-        .badge-medium { background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(217,119,6,0.12)); color: #d97706; border: 1px solid rgba(245,158,11,0.2); }
-        .badge-low { background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.12)); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
-        .badge-status { padding: 0.25rem 0.625rem; border-radius: 999px; font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
-        .badge-status-pending { background: rgba(242,153,74,0.12); color: #e68a2e; }
-        .badge-status-progress { background: rgba(99,102,241,0.12); color: #667eea; }
-        .badge-status-completed { background: rgba(17,153,142,0.12); color: #11998e; }
+        .badge-high { background: rgba(239,68,68,0.12); color: #dc2626; border: 1px solid rgba(239,68,68,0.2); }
+        .badge-medium { background: rgba(245,158,11,0.12); color: #d97706; border: 1px solid rgba(245,158,11,0.2); }
+        .badge-low { background: rgba(16,185,129,0.12); color: #059669; border: 1px solid rgba(16,185,129,0.2); }
+        /* Team Workload */
+        .workload-item { display: flex; align-items: center; gap: 1rem; padding: 0.875rem 0; border-bottom: 1px solid var(--border-color); }
+        .workload-item:last-child { border-bottom: none; }
+        .workload-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 0.9375rem; flex-shrink: 0; }
+        .workload-info { flex: 1; min-width: 0; }
+        .workload-name { font-weight: 600; font-size: 0.9375rem; color: var(--foreground); margin-bottom: 0.35rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .workload-bar-row { display: flex; align-items: center; gap: 0.75rem; }
+        .workload-bar-bg { flex: 1; height: 8px; background: var(--gray-100); border-radius: 999px; overflow: hidden; }
+        .workload-bar-done { height: 100%; background: linear-gradient(135deg, #11998e, #38ef7d); border-radius: 999px; }
+        .workload-counts { display: flex; gap: 0.5rem; flex-shrink: 0; }
+        .workload-badge { padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.6875rem; font-weight: 700; }
+        .wbadge-done { background: rgba(17,153,142,0.12); color: #11998e; }
+        .wbadge-prog { background: rgba(99,102,241,0.12); color: #667eea; }
+        .wbadge-pend { background: rgba(242,153,74,0.12); color: #e68a2e; }
+        /* Project Progress */
+        .proj-item { padding: 1rem 0; border-bottom: 1px solid var(--border-color); }
+        .proj-item:last-child { border-bottom: none; }
+        .proj-header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+        .proj-name { font-weight: 600; font-size: 0.9375rem; color: var(--foreground); }
+        .proj-rate { font-size: 0.875rem; font-weight: 700; color: var(--primary-600); }
+        .proj-bar-bg { width: 100%; height: 8px; background: var(--gray-100); border-radius: 999px; overflow: hidden; margin-bottom: 0.4rem; }
+        .proj-bar-fill { height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 999px; transition: width 1s ease; }
+        .proj-counts { display: flex; gap: 0.75rem; font-size: 0.75rem; color: var(--foreground-secondary); }
         .empty-state { text-align: center; padding: 2rem; color: var(--foreground-secondary); font-size: 0.875rem; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -142,9 +163,10 @@ export default function Analytics() {
 
       <div className="page-header">
         <h1>Analytics Dashboard</h1>
-        <p>{isAdmin ? 'Overview of all projects, tasks, and team productivity' : 'Overview of your tasks and productivity'}</p>
+        <p>Overview of all projects, tasks, and team productivity</p>
       </div>
 
+      {/* Metric Cards */}
       <div className="metrics-grid">
         {isAdmin && (
           <div className="metric-card">
@@ -178,6 +200,7 @@ export default function Analytics() {
         </div>
       </div>
 
+      {/* Task Distribution + Completion Rate */}
       <div className="section-grid">
         <div className="section-card">
           <div className="section-header">
@@ -186,32 +209,24 @@ export default function Analytics() {
           <div className="section-body">
             <div className="progress-row">
               <span className="progress-label">Completed</span>
-              <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayCompleted / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #11998e, #38ef7d)' }} />
-              </div>
+              <div className="progress-bar-bg"><div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayCompleted / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #11998e, #38ef7d)' }} /></div>
               <span className="progress-count">{displayCompleted}</span>
             </div>
             <div className="progress-row">
               <span className="progress-label">In Progress</span>
-              <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayInProgress / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #667eea, #764ba2)' }} />
-              </div>
+              <div className="progress-bar-bg"><div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayInProgress / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #667eea, #764ba2)' }} /></div>
               <span className="progress-count">{displayInProgress}</span>
             </div>
             <div className="progress-row">
               <span className="progress-label">Pending</span>
-              <div className="progress-bar-bg">
-                <div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayPending / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #f2994a, #f093fb)' }} />
-              </div>
+              <div className="progress-bar-bg"><div className="progress-bar" style={{ width: `${displayTotal > 0 ? (displayPending / displayTotal * 100) : 0}%`, background: 'linear-gradient(135deg, #f2994a, #f093fb)' }} /></div>
               <span className="progress-count">{displayPending}</span>
             </div>
           </div>
         </div>
 
         <div className="section-card">
-          <div className="section-header">
-            <div className="section-title"><span>🎯</span> Completion Rate</div>
-          </div>
+          <div className="section-header"><div className="section-title"><span>🎯</span> Completion Rate</div></div>
           <div className="section-body">
             <div className="completion-ring">
               <div className="ring-container">
@@ -226,77 +241,64 @@ export default function Analytics() {
                 </svg>
                 <div className="ring-value">{completionRate}%</div>
               </div>
-              <div className="ring-label">{isAdmin ? 'Overall' : 'My Tasks'}: {displayCompleted} of {displayTotal} tasks completed</div>
+              <div className="ring-label">Overall: {displayCompleted} of {displayTotal} tasks completed</div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Team Workload Distribution (admin only) + Upcoming Deadlines */}
       <div className="section-grid">
         {isAdmin && (
           <div className="section-card">
-            <div className="section-header">
-              <div className="section-title"><span>👤</span> My Tasks Summary</div>
-            </div>
+            <div className="section-header"><div className="section-title"><span>👥</span> Team Workload Distribution</div></div>
             <div className="section-body">
-              <div className="progress-row">
-                <span className="progress-label">Completed</span>
-                <div className="progress-bar-bg">
-                  <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.completed / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #11998e, #38ef7d)' }} />
-                </div>
-                <span className="progress-count">{data.myTasks.completed}</span>
-              </div>
-              <div className="progress-row">
-                <span className="progress-label">In Progress</span>
-                <div className="progress-bar-bg">
-                  <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.inProgress / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #667eea, #764ba2)' }} />
-                </div>
-                <span className="progress-count">{data.myTasks.inProgress}</span>
-              </div>
-              <div className="progress-row">
-                <span className="progress-label">Pending</span>
-                <div className="progress-bar-bg">
-                  <div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.pending / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #f2994a, #f093fb)' }} />
-                </div>
-                <span className="progress-count">{data.myTasks.pending}</span>
-              </div>
-              <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--foreground-secondary)' }}>
-                My Completion Rate: <strong style={{ color: 'var(--foreground)' }}>{myCompletionRate}%</strong>
-              </div>
+              {(data.teamWorkload || []).length > 0 ? (
+                (data.teamWorkload || []).map(member => (
+                  <div key={member.userId} className="workload-item">
+                    <div className="workload-avatar">{member.username.charAt(0).toUpperCase()}</div>
+                    <div className="workload-info">
+                      <div className="workload-name">{member.username}</div>
+                      <div className="workload-bar-row">
+                        <div className="workload-bar-bg">
+                          <div className="workload-bar-done" style={{ width: `${member.total > 0 ? (member.completed / member.total * 100) : 0}%` }} />
+                        </div>
+                        <div className="workload-counts">
+                          <span className="workload-badge wbadge-done">{member.completed}✓</span>
+                          <span className="workload-badge wbadge-prog">{member.inProgress}⏳</span>
+                          <span className="workload-badge wbadge-pend">{member.pending}📋</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">No team data available</div>
+              )}
             </div>
           </div>
         )}
 
         <div className="section-card">
-          <div className="section-header">
-            <div className="section-title"><span>⏰</span> Upcoming Deadlines</div>
-          </div>
+          <div className="section-header"><div className="section-title"><span>⏰</span> Upcoming Deadlines</div></div>
           <div className="section-body">
             {data.upcomingDeadlines.length > 0 ? (
               <div className="deadline-list">
                 {data.upcomingDeadlines.map(d => {
                   const dueDate = d.dueDate ? new Date(d.dueDate) : null;
-                  const dayNum = dueDate ? dueDate.getDate() : '--';
-                  const monthStr = dueDate ? dueDate.toLocaleString('default', { month: 'short' }) : '';
                   const priorityKey = (d.priority || 'medium').toLowerCase();
-                  const statusKey = d.status === 'In Progress' ? 'progress' : (d.status === 'Completed' ? 'completed' : 'pending');
                   const priorityIcon = priorityKey === 'high' ? '🔴' : priorityKey === 'medium' ? '🟡' : '🟢';
                   return (
                     <Link key={d.taskId} href={`/tasks/${d.taskId}`} className="deadline-item">
-                      <div className={`deadline-icon deadline-icon-${priorityKey}`}>
-                        {priorityIcon}
-                      </div>
+                      <div className="deadline-icon">{priorityIcon}</div>
                       <div className="deadline-content">
                         <span className="deadline-title">{d.title}</span>
-                        <div className="deadline-subtitle">
-                          <span className={`badge-status badge-status-${statusKey}`}>{d.status}</span>
-                        </div>
+                        <div className="deadline-subtitle">{d.status} · {d.priority} Priority</div>
                       </div>
                       <div className="deadline-right">
-                        <span className={`badge badge-${priorityKey}`}>{d.priority}</span>
                         <div className="deadline-date-box">
-                          <div className="deadline-date-day">{dayNum}</div>
-                          <div className="deadline-date-month">{monthStr}</div>
+                          <div className="deadline-date-day">{dueDate ? dueDate.getDate() : '--'}</div>
+                          <div className="deadline-date-month">{dueDate ? dueDate.toLocaleString('default', { month: 'short' }) : ''}</div>
                         </div>
                       </div>
                     </Link>
@@ -309,6 +311,61 @@ export default function Analytics() {
           </div>
         </div>
       </div>
+
+      {/* Project Progress Tracking */}
+      <div className="section-card" style={{ marginBottom: '2rem' }}>
+        <div className="section-header"><div className="section-title"><span>📈</span> Project Progress Tracking</div></div>
+        <div className="section-body">
+          {(data.projectProgress || []).length > 0 ? (
+            (data.projectProgress || []).map(proj => (
+              <div key={proj.projectId} className="proj-item">
+                <div className="proj-header-row">
+                  <div className="proj-name">{proj.projectName}</div>
+                  <div className="proj-rate">{proj.completionRate}%</div>
+                </div>
+                <div className="proj-bar-bg">
+                  <div className="proj-bar-fill" style={{ width: `${proj.completionRate}%` }} />
+                </div>
+                <div className="proj-counts">
+                  <span>✅ {proj.completed} done</span>
+                  <span>⏳ {proj.inProgress} in progress</span>
+                  <span>📋 {proj.pending} pending</span>
+                  <span>📌 {proj.total} total</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="empty-state">No project data available</div>
+          )}
+        </div>
+      </div>
+
+      {/* My Tasks Summary (admin) */}
+      {isAdmin && (
+        <div className="section-card">
+          <div className="section-header"><div className="section-title"><span>👤</span> My Tasks Summary</div></div>
+          <div className="section-body">
+            <div className="progress-row">
+              <span className="progress-label">Completed</span>
+              <div className="progress-bar-bg"><div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.completed / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #11998e, #38ef7d)' }} /></div>
+              <span className="progress-count">{data.myTasks.completed}</span>
+            </div>
+            <div className="progress-row">
+              <span className="progress-label">In Progress</span>
+              <div className="progress-bar-bg"><div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.inProgress / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #667eea, #764ba2)' }} /></div>
+              <span className="progress-count">{data.myTasks.inProgress}</span>
+            </div>
+            <div className="progress-row">
+              <span className="progress-label">Pending</span>
+              <div className="progress-bar-bg"><div className="progress-bar" style={{ width: `${data.myTasks.total > 0 ? (data.myTasks.pending / data.myTasks.total * 100) : 0}%`, background: 'linear-gradient(135deg, #f2994a, #f093fb)' }} /></div>
+              <span className="progress-count">{data.myTasks.pending}</span>
+            </div>
+            <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--foreground-secondary)' }}>
+              My Completion Rate: <strong style={{ color: 'var(--foreground)' }}>{myCompletionRate}%</strong>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

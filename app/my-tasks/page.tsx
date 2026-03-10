@@ -20,26 +20,27 @@ export default function MyTasks() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
+  const [dueDateFilter, setDueDateFilter] = useState('');
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     // Wait for auth to finish loading
     if (authLoading) return;
-    
+
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
       return;
     }
     fetchTasks();
-  }, [statusFilter, priorityFilter, authLoading]);
+  }, [statusFilter, priorityFilter, dueDateFilter, authLoading]);
 
   const fetchTasks = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      
+
       if (!token) {
         router.push('/login');
         return;
@@ -48,7 +49,11 @@ export default function MyTasks() {
       const params = new URLSearchParams();
       if (statusFilter) params.append('status', statusFilter);
       if (priorityFilter) params.append('priority', priorityFilter);
-      
+      if (dueDateFilter) {
+        params.append('dueDateFrom', dueDateFilter);
+        params.append('dueDateTo', dueDateFilter);
+      }
+
       const response = await fetch(`/api/tasks/my-tasks?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -61,7 +66,7 @@ export default function MyTasks() {
         localStorage.removeItem('user');
         router.push('/login');
         return;
-      }      if (response.ok) {
+      } if (response.ok) {
         const json = await response.json();
         // API returns { success, data: [...tasks...] }
         const tasksArr = json.data || json.tasks || json;
@@ -76,6 +81,71 @@ export default function MyTasks() {
           dueDate: t.dueDate || t.DueDate,
         }));
         setTasks(mapped);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTasksWithRange = async (from: string, to: string) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) { router.push('/login'); return; }
+      const params = new URLSearchParams();
+      params.append('dueDateFrom', from);
+      params.append('dueDateTo', to);
+      const response = await fetch(`/api/tasks/my-tasks?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const json = await response.json();
+        const tasksArr = json.data || json.tasks || json;
+        const mapped = (Array.isArray(tasksArr) ? tasksArr : []).map((t: any) => ({
+          taskId: t.taskId || t.TaskID,
+          title: t.title || t.Title,
+          description: t.description || t.Description,
+          projectName: t.project?.projectName || t.projectName || '',
+          status: t.status || t.Status,
+          priority: t.priority || t.Priority,
+          dueDate: t.dueDate || t.DueDate,
+        }));
+        setTasks(mapped);
+      }
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchOverdueTasks = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) { router.push('/login'); return; }
+      const today = new Date().toISOString().slice(0, 10);
+      const params = new URLSearchParams();
+      params.append('dueDateTo', today);
+      const response = await fetch(`/api/tasks/my-tasks?${params}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const json = await response.json();
+        const tasksArr = json.data || json.tasks || json;
+        const mapped = (Array.isArray(tasksArr) ? tasksArr : []).map((t: any) => ({
+          taskId: t.taskId || t.TaskID,
+          title: t.title || t.Title,
+          description: t.description || t.Description,
+          projectName: t.project?.projectName || t.projectName || '',
+          status: t.status || t.Status,
+          priority: t.priority || t.Priority,
+          dueDate: t.dueDate || t.DueDate,
+        }));
+        // Only show tasks that are not completed
+        setTasks(mapped.filter((t: any) => t.status !== 'Completed'));
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -404,7 +474,7 @@ export default function MyTasks() {
         <div className="filter-bar">
           <div className="filter-group">
             <label className="filter-label">Status</label>
-            <select 
+            <select
               className="filter-select"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -417,7 +487,7 @@ export default function MyTasks() {
           </div>
           <div className="filter-group">
             <label className="filter-label">Priority</label>
-            <select 
+            <select
               className="filter-select"
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value)}
@@ -430,20 +500,25 @@ export default function MyTasks() {
           </div>
           <div className="filter-group">
             <label className="filter-label">Due Date</label>
-            <input type="date" className="filter-input" />
+            <input
+              type="date"
+              className="filter-select"
+              value={dueDateFilter}
+              onChange={(e) => setDueDateFilter(e.target.value)}
+            />
           </div>
         </div>
         <div className="quick-filters">
-          <div className="quick-filter-chip active">
+          <div className={`quick-filter-chip${!statusFilter && !priorityFilter && !dueDateFilter ? ' active' : ''}`} onClick={() => { setStatusFilter(''); setPriorityFilter(''); setDueDateFilter(''); }}>
             <span>📋</span> All Tasks <span style={{ marginLeft: '0.25rem', opacity: 0.7 }}>({tasks.length})</span>
           </div>
-          <div className="quick-filter-chip">
+          <div className={`quick-filter-chip${dueDateFilter === new Date().toISOString().slice(0, 10) ? ' active' : ''}`} onClick={() => { const today = new Date().toISOString().slice(0, 10); setStatusFilter(''); setPriorityFilter(''); setDueDateFilter(today); }}>
             <span>📅</span> Today
           </div>
-          <div className="quick-filter-chip">
+          <div className={`quick-filter-chip${dueDateFilter === '__week__' ? ' active' : ''}`} onClick={() => { setStatusFilter(''); setPriorityFilter(''); setDueDateFilter(''); const now = new Date(); const endOfWeek = new Date(now); endOfWeek.setDate(now.getDate() + (7 - now.getDay())); fetchTasksWithRange(now.toISOString().slice(0, 10), endOfWeek.toISOString().slice(0, 10)); }}>
             <span>📆</span> This Week
           </div>
-          <div className="quick-filter-chip">
+          <div className="quick-filter-chip" onClick={() => { setStatusFilter(''); setPriorityFilter(''); setDueDateFilter(''); fetchOverdueTasks(); }}>
             <span>⚠️</span> Overdue
           </div>
         </div>
@@ -457,7 +532,7 @@ export default function MyTasks() {
           </div>
           <span className="task-count">{tasks.length} tasks</span>
         </div>
-        
+
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>

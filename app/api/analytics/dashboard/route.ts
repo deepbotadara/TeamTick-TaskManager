@@ -24,14 +24,11 @@ export async function GET(request: NextRequest) {
     const userId = auth.user.userId;
     const userIsAdmin = await isAdmin(userId);
 
-    // For admin: global stats. For regular user: only their own data.
     const taskWhere = userIsAdmin ? {} : { AssignedTo: userId };
     const projectWhere = userIsAdmin ? {} : { CreatedBy: userId };
 
-    // Get total project count
     const totalProjects = await prisma.project.count({ where: projectWhere });
 
-    // Get task statistics
     const [totalTasks, completedTasks, pendingTasks, inProgressTasks] = await Promise.all([
       prisma.task.count({ where: taskWhere }),
       prisma.task.count({ where: { ...taskWhere, Status: 'Completed' } }),
@@ -39,7 +36,6 @@ export async function GET(request: NextRequest) {
       prisma.task.count({ where: { ...taskWhere, Status: 'In Progress' } })
     ]);
 
-    // Get my tasks statistics (always user-scoped)
     const [myTotal, myCompleted, myPending, myInProgress] = await Promise.all([
       prisma.task.count({ where: { AssignedTo: userId } }),
       prisma.task.count({ where: { AssignedTo: userId, Status: 'Completed' } }),
@@ -47,28 +43,70 @@ export async function GET(request: NextRequest) {
       prisma.task.count({ where: { AssignedTo: userId, Status: 'In Progress' } })
     ]);
 
-    // Get upcoming deadlines (scoped)
     const upcomingDeadlines = await prisma.task.findMany({
       where: {
         ...taskWhere,
-        DueDate: {
-          gte: new Date()
-        },
-        Status: {
-          not: 'Completed'
+        DueDate: { gte: new Date() },
+        Status: { not: 'Completed' }
+      },
+      select: { TaskID: true, Title: true, DueDate: true, Priority: true, Status: true },
+      orderBy: { DueDate: 'asc' },
+      take: 5
+    });
+
+    // Team Workload Distribution (admin only)
+    let teamWorkload: { userId: number; username: string; total: number; completed: number; inProgress: number; pending: number }[] = [];
+    if (userIsAdmin) {
+      const users = await prisma.user.findMany({
+        select: {
+          UserID: true,
+          UserName: true,
+          assignedTasks: { select: { Status: true } }
+        }
+      });
+      teamWorkload = users
+        .filter(u => u.assignedTasks.length > 0)
+        .map(u => ({
+          userId: u.UserID,
+          username: u.UserName,
+          total: u.assignedTasks.length,
+          completed: u.assignedTasks.filter(t => t.Status === 'Completed').length,
+          inProgress: u.assignedTasks.filter(t => t.Status === 'In Progress').length,
+          pending: u.assignedTasks.filter(t => t.Status === 'Pending').length,
+        }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10);
+    }
+
+    // Project Progress Tracking
+    const projects = await prisma.project.findMany({
+      where: projectWhere,
+      select: {
+        ProjectID: true,
+        ProjectName: true,
+        taskLists: {
+          select: {
+            tasks: { select: { Status: true } }
+          }
         }
       },
-      select: {
-        TaskID: true,
-        Title: true,
-        DueDate: true,
-        Priority: true,
-        Status: true
-      },
-      orderBy: {
-        DueDate: 'asc'
-      },
-      take: 5
+      orderBy: { CreatedAt: 'desc' },
+      take: 10
+    });
+
+    const projectProgress = projects.map(p => {
+      const allTasks = p.taskLists.flatMap(l => l.tasks);
+      const total = allTasks.length;
+      const completed = allTasks.filter(t => t.Status === 'Completed').length;
+      return {
+        projectId: p.ProjectID,
+        projectName: p.ProjectName,
+        total,
+        completed,
+        inProgress: allTasks.filter(t => t.Status === 'In Progress').length,
+        pending: allTasks.filter(t => t.Status === 'Pending').length,
+        completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
+      };
     });
 
     return successResponse({
@@ -91,7 +129,9 @@ export async function GET(request: NextRequest) {
           dueDate: task.DueDate,
           priority: task.Priority,
           status: task.Status
-        }))
+        })),
+        teamWorkload,
+        projectProgress
       }
     });
 

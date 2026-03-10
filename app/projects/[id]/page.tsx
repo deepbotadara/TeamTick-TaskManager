@@ -4,6 +4,14 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
+interface ProjectMember {
+  userId: number;
+  username: string;
+  email: string;
+  taskCount: number;
+  completed: number;
+}
+
 interface TaskList {
   ListID: number;
   ListName: string;
@@ -32,6 +40,9 @@ export default function ProjectDetails() {
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [creatorId, setCreatorId] = useState<number | null>(null);
+  const [showMembers, setShowMembers] = useState(false);
 
   useEffect(() => {
     fetchProject();
@@ -53,11 +64,27 @@ export default function ProjectDetails() {
       setProject(data);
       setEditName(data.ProjectName);
       setEditDesc(data.Description || '');
+
+      // Also fetch members
+      fetchMembers(token);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchMembers = async (token: string) => {
+    try {
+      const mRes = await fetch(`/api/projects/${projectId}/members`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (mRes.ok) {
+        const mData = await mRes.json();
+        setMembers(mData.data || []);
+        setCreatorId(mData.creatorId || null);
+      }
+    } catch { /* ignore */ }
   };
 
   const handleUpdate = async () => {
@@ -320,6 +347,45 @@ export default function ProjectDetails() {
                 <div className="info-value">{totalTasks}</div>
               </div>
             </div>
+          </div>
+
+          {/* Project Member Management */}
+          <div className="section-card" style={{ marginTop: '1.5rem' }}>
+            <div className="section-header">
+              <div className="section-title"><span>👥</span> Project Members</div>
+              <button
+                style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary-600)', background: 'none', border: 'none', cursor: 'pointer' }}
+                onClick={() => setShowMembers(!showMembers)}
+              >
+                {showMembers ? 'Hide' : `Show (${members.length})`}
+              </button>
+            </div>
+            {showMembers && (
+              <div className="section-body">
+                {members.length > 0 ? (
+                  members.map(m => (
+                    <div key={m.userId} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: m.userId === creatorId ? 'linear-gradient(135deg,#f2994a,#f093fb)' : 'linear-gradient(135deg,#667eea,#764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, flexShrink: 0 }}>
+                        {m.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {m.username}
+                          {m.userId === creatorId && <span style={{ fontSize: '0.6875rem', background: 'rgba(242,153,74,0.15)', color: '#d97706', padding: '0.125rem 0.5rem', borderRadius: '999px', fontWeight: 700 }}>Creator</span>}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--foreground-secondary)' }}>{m.email}</div>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)' }}>{m.taskCount} tasks</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--success-600)' }}>{m.completed} done</div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ color: 'var(--foreground-secondary)', textAlign: 'center', padding: '1.5rem' }}>No members yet. Assign tasks to users to add them.</p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

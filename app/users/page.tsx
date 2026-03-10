@@ -341,6 +341,69 @@ export default function Users() {
           ))}
         </div>
       )}
+
+      {/* Permissions Management Panel */}
+      <div style={{ marginTop: '2.5rem', background: 'var(--background-secondary)', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span style={{ fontSize: '1.375rem' }}>🔐</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--foreground)' }}>Manage Permissions</div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--foreground-secondary)', marginTop: '0.125rem' }}>Role-based access control overview</div>
+          </div>
+        </div>
+        <div style={{ padding: '1.5rem', overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '0.875rem' }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left', paddingBottom: '1rem', color: 'var(--foreground-secondary)', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', minWidth: 180 }}>Permission</th>
+                {roles.map(r => (
+                  <th key={r.roleId} style={{ textAlign: 'center', paddingBottom: '1rem', color: 'var(--foreground)', fontWeight: 700, fontSize: '0.875rem', minWidth: 100 }}>{r.roleName}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {([
+                { label: 'View All Projects', admin: true, manager: true, user: false },
+                { label: 'Create Project', admin: true, manager: true, user: false },
+                { label: 'Edit/Delete Project', admin: true, manager: false, user: false },
+                { label: 'View Assigned Tasks', admin: true, manager: true, user: true },
+                { label: 'Create Task', admin: true, manager: true, user: false },
+                { label: 'Edit/Delete Any Task', admin: true, manager: false, user: false },
+                { label: 'Add Comments', admin: true, manager: true, user: true },
+                { label: 'Manage Users', admin: true, manager: false, user: false },
+                { label: 'Assign Roles', admin: true, manager: false, user: false },
+                { label: 'View Analytics', admin: true, manager: false, user: false },
+                { label: 'Search All Tasks', admin: true, manager: true, user: false },
+              ]).map((perm, i) => {
+                const roleMap: Record<string, boolean> = { Admin: perm.admin, Manager: perm.manager, User: perm.user };
+                return (
+                  <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'var(--gray-50)' }}>
+                    <td style={{ padding: '0.75rem 0.5rem', color: 'var(--foreground)', fontWeight: 500 }}>{perm.label}</td>
+                    {roles.map(r => {
+                      const allowed = roleMap[r.roleName] ?? false;
+                      return (
+                        <td key={r.roleId} style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                            width: 26, height: 26, borderRadius: '50%',
+                            background: allowed ? 'rgba(17,153,142,0.12)' : 'rgba(239,68,68,0.08)',
+                            color: allowed ? '#11998e' : '#dc2626',
+                            fontSize: '0.875rem', fontWeight: 700
+                          }}>{allowed ? '✓' : '✗'}</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <div style={{ marginTop: '1.25rem', fontSize: '0.8125rem', color: 'var(--foreground-secondary)', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <span>ℹ️</span>
+            <span>Permissions are enforced server-side. To change a user's access level, edit their role in the user list above.</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
