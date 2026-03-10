@@ -8,6 +8,7 @@ interface RegisterRequest {
     name?: string;
     email: string;
     password: string;
+    role?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -15,6 +16,8 @@ export async function POST(request: NextRequest) {
         const body: RegisterRequest = await request.json();
         const username = body.username || body.name;
         const { email, password } = body;
+        const validRoles = ['Admin', 'Project Manager', 'User'];
+        const roleName = validRoles.includes(body.role || '') ? body.role! : 'User';
 
         // Validation
         if (!username || !email || !password) {
@@ -59,14 +62,14 @@ export async function POST(request: NextRequest) {
                 }
             });
 
-            // Find or create default "User" role
+            // Find or create the selected role
             let userRole = await tx.role.findFirst({
-                where: { RoleName: 'User' }
+                where: { RoleName: roleName }
             });
 
             if (!userRole) {
                 userRole = await tx.role.create({
-                    data: { RoleName: 'User' }
+                    data: { RoleName: roleName }
                 });
             }
 
@@ -94,7 +97,7 @@ export async function POST(request: NextRequest) {
                 userId: newUser.UserID,
                 username: newUser.UserName,
                 email: newUser.Email,
-                roles: ['User']
+                roles: [roleName]
             }
         }, 201);
 

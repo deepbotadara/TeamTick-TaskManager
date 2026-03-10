@@ -10,6 +10,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('User');
   const [isLoading, setIsLoading] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState('');
@@ -32,7 +33,7 @@ export default function Register() {
 
     setIsLoading(true);
 
-    const result = await register(name, email, password);
+    const result = await register(name, email, password, role);
     
     if (result.success) {
       router.push('/dashboard');
@@ -122,34 +123,37 @@ export default function Register() {
         .auth-right {
           flex: 1;
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: center;
           padding: 2rem;
+          padding-top: 3rem;
+          padding-bottom: 2rem;
           background: var(--background);
           overflow-y: auto;
         }
         .auth-card {
           width: 100%;
-          max-width: 420px;
+          max-width: 460px;
           animation: fadeInUp 0.6s ease-out;
         }
         .auth-header {
           text-align: center;
-          margin-bottom: 2rem;
+          margin-bottom: 1.25rem;
         }
         .auth-header h2 {
-          font-size: 1.875rem;
+          font-size: 1.75rem;
           font-weight: 700;
           color: var(--foreground);
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.25rem;
         }
         .auth-header p {
           color: var(--foreground-secondary);
+          font-size: 0.9rem;
         }
         .auth-form {
           display: flex;
           flex-direction: column;
-          gap: 1.25rem;
+          gap: 1rem;
         }
         .form-group {
           display: flex;
@@ -180,8 +184,8 @@ export default function Register() {
         }
         .input-wrapper input {
           width: 100%;
-          padding: 0.875rem 1rem 0.875rem 3rem;
-          font-size: 1rem;
+          padding: 0.75rem 1rem 0.75rem 2.75rem;
+          font-size: 0.9375rem;
           background: var(--background-secondary);
           border: 2px solid var(--border-color);
           border-radius: 12px;
@@ -231,9 +235,74 @@ export default function Register() {
         .terms-check a:hover {
           text-decoration: underline;
         }
+        .role-selector {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 0.5rem;
+        }
+        .role-option {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          gap: 0.375rem;
+          padding: 0.75rem 0.5rem;
+          border: 2px solid var(--border-color);
+          border-radius: 12px;
+          cursor: pointer;
+          background: var(--background-secondary);
+          transition: all 0.2s ease;
+        }
+        .role-option:hover {
+          border-color: var(--gray-300);
+          background: var(--gray-50);
+        }
+        .role-option.selected {
+          border-color: #11998e;
+          background: rgba(17, 153, 142, 0.08);
+          box-shadow: 0 0 0 3px rgba(17, 153, 142, 0.1);
+        }
+        .role-option-radio {
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          border: 2px solid var(--border-color);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          transition: all 0.2s;
+        }
+        .role-option.selected .role-option-radio {
+          border-color: #11998e;
+          background: #11998e;
+        }
+        .role-option.selected .role-option-radio::after {
+          content: '';
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: white;
+        }
+        .role-option-info {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.125rem;
+        }
+        .role-option-label {
+          font-weight: 600;
+          font-size: 0.8125rem;
+          color: var(--foreground);
+        }
+        .role-option-desc {
+          font-size: 0.675rem;
+          color: var(--foreground-secondary);
+          line-height: 1.3;
+        }
         .submit-btn {
           width: 100%;
-          padding: 1rem;
+          padding: 0.875rem;
           font-size: 1rem;
           font-weight: 600;
           color: white;
@@ -269,10 +338,11 @@ export default function Register() {
         }
         .auth-login {
           text-align: center;
-          padding-top: 1.5rem;
+          padding-top: 1rem;
           border-top: 1px solid var(--border-color);
           color: var(--foreground-secondary);
-          margin-top: 1rem;
+          margin-top: 0.75rem;
+          margin-bottom: 1rem;
         }
         .auth-login a {
           color: var(--primary-500);
@@ -381,6 +451,42 @@ export default function Register() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label>Register as</label>
+              <div className="role-selector">
+                <div 
+                  className={`role-option ${role === 'User' ? 'selected' : ''}`}
+                  onClick={() => setRole('User')}
+                >
+                  <div className="role-option-radio"></div>
+                  <div className="role-option-info">
+                    <span className="role-option-label">👤 User</span>
+                    <span className="role-option-desc">Manage your own tasks & projects</span>
+                  </div>
+                </div>
+                <div 
+                  className={`role-option ${role === 'Project Manager' ? 'selected' : ''}`}
+                  onClick={() => setRole('Project Manager')}
+                >
+                  <div className="role-option-radio"></div>
+                  <div className="role-option-info">
+                    <span className="role-option-label">📋 Project Manager</span>
+                    <span className="role-option-desc">Manage projects, assign tasks & track progress</span>
+                  </div>
+                </div>
+                <div 
+                  className={`role-option ${role === 'Admin' ? 'selected' : ''}`}
+                  onClick={() => setRole('Admin')}
+                >
+                  <div className="role-option-radio"></div>
+                  <div className="role-option-info">
+                    <span className="role-option-label">🛡️ Admin</span>
+                    <span className="role-option-desc">Full access: team, analytics & settings</span>
+                  </div>
+                </div>
               </div>
             </div>
 

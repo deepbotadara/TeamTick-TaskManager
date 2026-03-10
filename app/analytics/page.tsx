@@ -28,14 +28,17 @@ interface DashboardData {
 
 export default function Analytics() {
   const router = useRouter();
-  const { user: authUser } = useAuth();
+  const { user: authUser, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<DashboardData | null>(null);
   const isAdmin = authUser?.role === 'Admin';
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!authUser) { router.push('/login'); return; }
+    if (authUser.role !== 'Admin') { router.push('/dashboard'); return; }
     fetchAnalytics();
-  }, []);
+  }, [authLoading, authUser]);
 
   const fetchAnalytics = async () => {
     try {

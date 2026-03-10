@@ -219,10 +219,10 @@ export default function Sidebar() {
           <span>Search</span>
         </Link>
 
-        {/* Admin Section */}
-        <div className="sidebar-section">
-          <div className="sidebar-section-title">Administration</div>
-          {user?.role === 'Admin' && (
+        {/* Admin Section - Only visible for Admins */}
+        {user?.role === 'Admin' && (
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">Administration</div>
             <Link 
               href="/users" 
               className={`sidebar-link ${isActive('/users') ? 'active' : ''}`}
@@ -230,15 +230,15 @@ export default function Sidebar() {
               <UsersIcon />
               <span>Team</span>
             </Link>
-          )}
-          <Link 
-            href="/analytics" 
-            className={`sidebar-link ${isActive('/analytics') ? 'active' : ''}`}
-          >
-            <AnalyticsIcon />
-            <span>Analytics</span>
-          </Link>
-        </div>        {/* User Section */}
+            <Link 
+              href="/analytics" 
+              className={`sidebar-link ${isActive('/analytics') ? 'active' : ''}`}
+            >
+              <AnalyticsIcon />
+              <span>Analytics</span>
+            </Link>
+          </div>
+        )}        {/* User Section */}
         <div className="sidebar-section" style={{ marginTop: 'auto' }}>
           <Link 
             href="/profile" 
