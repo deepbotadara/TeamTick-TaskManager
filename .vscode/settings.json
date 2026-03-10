@@ -1,0 +1,16 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd \"d:\\\\Darshan University\\\\Sem-6\\\\AWT\\\\Project\\\\todo-list-app\"; Test-Path \"node_modules\"$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^npx prisma generate$/": {
+            "approve": true,
+            "matchCommandLine": true
+        },
+        "/^cd \"d:\\\\Darshan University\\\\Sem-6\\\\AWT\\\\Project\\\\todo-list-app\"; npx next build 2>&1 \\| Select-Object -First 50$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

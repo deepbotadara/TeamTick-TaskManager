@@ -1,0 +1,28 @@
+
+⚠️ Pending Works (Missing from Description)
+Screen-Level Gaps
+Drag-and-Drop on Kanban Board (Screen 5)
+
+The Kanban board has button-based status movement (→ In Progress / → Complete), but no actual drag-and-drop functionality. The description explicitly requires drag-and-drop task movement.
+Project Member Management (Screen 4)
+
+The Project Details page shows task lists and project info, but no member management panel (add/remove project members, view who's on the project).
+Filter by Assignee & Due Date in Search (Screen 10)
+
+The search page filters by priority and status, but no filter by assignee and no filter by due date as specified in the description.
+Save Frequent Searches (Screen 10)
+
+The search page has visual "quick filter chips" (hardcoded: High Priority, In Progress, etc.) but no ability to save custom searches persistently.
+Manage Permissions (Screen 8)
+
+User & Role Management supports adding users and assigning roles, but there is no dedicated permissions management (e.g., what each role can do).
+Analytics Gaps (Screen 12)
+Team Workload Distribution – The analytics page shows overall task stats but no per-user/team workload breakdown (who has how many tasks).
+
+Project Progress Tracking – No per-project progress chart or breakdown (e.g., % completion per project).
+
+My Tasks Gap (Screen 9)
+Filter by Due Date – The due date input field is rendered on the My Tasks page but is non-functional (not wired to the API filter).
+Summary Count
+Missing/Incomplete features: 8
+All 12 screens exist, but several have partial implementations compared to the description.
