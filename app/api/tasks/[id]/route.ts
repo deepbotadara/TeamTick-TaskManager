@@ -148,6 +148,33 @@ export async function PUT(
             }
         }
 
+        const historyChanges: string[] = [];
+
+        if (status !== undefined && status !== existingTask.Status) {
+            historyChanges.push(`Status Changed to ${status}`);
+        }
+        if (priority !== undefined && priority !== existingTask.Priority) {
+            historyChanges.push(`Priority Changed to ${priority}`);
+        }
+        if (assignedTo !== undefined && assignedTo !== existingTask.AssignedTo) {
+            historyChanges.push('Task Assigned to User');
+        }
+        if (dueDate !== undefined) {
+            const currentDue = existingTask.DueDate ? new Date(existingTask.DueDate).toISOString().slice(0, 10) : '';
+            const nextDue = dueDate ? new Date(dueDate).toISOString().slice(0, 10) : '';
+            if (currentDue !== nextDue) {
+                historyChanges.push('Due Date Updated');
+            }
+        }
+
+        if (title !== undefined && title !== existingTask.Title) {
+            historyChanges.push('Task Title Updated');
+        }
+
+        if (description !== undefined && description !== existingTask.Description) {
+            historyChanges.push('Task Description Updated');
+        }
+
         // Build update data
         const updateData: any = {};
         if (title !== undefined) updateData.Title = title;
@@ -168,12 +195,12 @@ export async function PUT(
                 data: updateData
             });
 
-            await tx.taskHistory.create({
-                data: {
+            await tx.taskHistory.createMany({
+                data: (historyChanges.length > 0 ? historyChanges : ['Task Updated']).map((changeType) => ({
                     TaskID: taskId,
                     ChangedBy: auth.user!.userId,
-                    ChangeType: 'Task Updated'
-                }
+                    ChangeType: changeType
+                }))
             });
         });
 

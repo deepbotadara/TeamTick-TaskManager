@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
 // SVG Icons as components
@@ -67,11 +67,97 @@ const MoonIcon = () => (
   </svg>
 );
 
+const BellIcon = () => (
+  <svg className="sidebar-link-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+  </svg>
+);
+
+interface NotificationItem {
+  id: string;
+  type: 'assigned' | 'due-soon' | 'status-changed';
+  taskId: number;
+  taskTitle: string;
+  message: string;
+  createdAt: string;
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+  const [readNotificationIds, setReadNotificationIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    const storedRead = localStorage.getItem('read_notification_ids');
+    if (storedRead) {
+      try {
+        setReadNotificationIds(JSON.parse(storedRead));
+      } catch {
+        setReadNotificationIds([]);
+      }
+    }
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setIsLoadingNotifications(true);
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch('/api/notifications?limit=20', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setNotifications(json.data || []);
+      }
+    } catch {
+      setNotifications([]);
+    } finally {
+      setIsLoadingNotifications(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !readNotificationIds.includes(n.id)).length,
+    [notifications, readNotificationIds]
+  );
+
+  const markAllRead = () => {
+    const merged = Array.from(new Set([...readNotificationIds, ...notifications.map((n) => n.id)]));
+    setReadNotificationIds(merged);
+    localStorage.setItem('read_notification_ids', JSON.stringify(merged));
+  };
+
+  const formatNotificationTime = (value: string) => {
+    const date = new Date(value);
+    const diffMs = Date.now() - date.getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString();
+  };
+
+  const typeLabel = (type: NotificationItem['type']) => {
+    if (type === 'assigned') return 'Assigned';
+    if (type === 'due-soon') return 'Due Soon';
+    return 'Status';
+  };
 
   // Helper function to check if link is active
   const isActive = (path: string) => {
@@ -92,6 +178,158 @@ export default function Sidebar() {
 
   return (
     <>
+    {showNotifications && (
+      <div className="notify-overlay" onClick={() => setShowNotifications(false)}>
+        <style jsx>{`
+          .notify-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.35);
+            z-index: 9998;
+          }
+          .notify-panel {
+            position: fixed;
+            top: 1.25rem;
+            left: 300px;
+            width: min(420px, calc(100vw - 2rem));
+            max-height: 78vh;
+            overflow: auto;
+            background: var(--background-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+            z-index: 9999;
+            animation: notifyIn 0.2s ease-out;
+          }
+          .notify-head {
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+          }
+          .notify-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--foreground);
+          }
+          .notify-mark {
+            border: none;
+            background: var(--primary-50);
+            color: var(--primary-700);
+            padding: 0.35rem 0.55rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+          }
+          .notify-list {
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+          }
+          .notify-item {
+            display: block;
+            padding: 0.7rem 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            text-decoration: none;
+            color: inherit;
+            background: var(--background);
+            transition: all 0.2s;
+          }
+          .notify-item:hover {
+            border-color: var(--primary-400);
+            transform: translateY(-1px);
+          }
+          .notify-item.unread {
+            border-left: 4px solid var(--primary-500);
+            background: var(--primary-50);
+          }
+          .notify-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+          }
+          .notify-type {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--primary-700);
+            background: rgba(99,102,241,0.14);
+            padding: 0.17rem 0.45rem;
+            border-radius: 999px;
+          }
+          .notify-time {
+            font-size: 0.72rem;
+            color: var(--foreground-secondary);
+          }
+          .notify-task {
+            font-size: 0.86rem;
+            font-weight: 700;
+            color: var(--foreground);
+            margin-bottom: 0.22rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .notify-message {
+            font-size: 0.78rem;
+            color: var(--foreground-secondary);
+            line-height: 1.35;
+          }
+          .notify-empty {
+            padding: 1.25rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--foreground-secondary);
+          }
+          @keyframes notifyIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @media (max-width: 1024px) {
+            .notify-panel { left: 94px; }
+          }
+          @media (max-width: 768px) {
+            .notify-panel { left: 1rem; right: 1rem; width: auto; }
+          }
+        `}</style>
+        <div className="notify-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="notify-head">
+            <div className="notify-title">Notifications</div>
+            <button className="notify-mark" onClick={markAllRead}>Mark all read</button>
+          </div>
+          <div className="notify-list">
+            {isLoadingNotifications && <div className="notify-empty">Loading notifications...</div>}
+            {!isLoadingNotifications && notifications.length === 0 && (
+              <div className="notify-empty">No notifications yet</div>
+            )}
+            {!isLoadingNotifications && notifications.map((notification) => (
+              <Link
+                key={notification.id}
+                href={`/tasks/${notification.taskId}`}
+                className={`notify-item ${readNotificationIds.includes(notification.id) ? '' : 'unread'}`}
+                onClick={() => setShowNotifications(false)}
+              >
+                <div className="notify-row">
+                  <span className="notify-type">{typeLabel(notification.type)}</span>
+                  <span className="notify-time">{formatNotificationTime(notification.createdAt)}</span>
+                </div>
+                <div className="notify-task">{notification.taskTitle}</div>
+                <div className="notify-message">{notification.message}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+
     {/* Logout Confirmation Modal */}
     {showLogoutModal && (
       <div className="logout-overlay" onClick={() => setShowLogoutModal(false)}>
@@ -232,8 +470,40 @@ export default function Sidebar() {
           <SearchIcon />
           <span>Search</span>
         </Link>
+        <button
+          onClick={() => {
+            setShowNotifications((prev) => !prev);
+            if (!showNotifications) {
+              fetchNotifications();
+            }
+          }}
+          className="sidebar-link"
+          style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', position: 'relative' }}
+        >
+          <BellIcon />
+          <span>Notifications</span>
+          {unreadCount > 0 && (
+            <span
+              style={{
+                marginLeft: 'auto',
+                background: '#ef4444',
+                color: '#fff',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                minWidth: '18px',
+                height: '18px',
+                borderRadius: '999px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 6px'
+              }}
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
+        </button>
 
-        {/* Admin Section - Only visible for Admins */}
         {user?.role === 'Admin' && (
           <div className="sidebar-section">
             <div className="sidebar-section-title">Administration</div>
@@ -252,7 +522,7 @@ export default function Sidebar() {
               <span>Analytics</span>
             </Link>
           </div>
-        )}        {/* User Section */}
+        )}
         <div className="sidebar-section" style={{ marginTop: 'auto' }}>
           <Link 
             href="/profile" 
