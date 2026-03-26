@@ -25,6 +25,21 @@ interface TaskList {
   TaskCount: number;
 }
 
+interface ProjectActivityItem {
+  historyId: number;
+  changeType: string;
+  changeTime: string;
+  task: {
+    taskId: number;
+    title: string;
+    listName: string;
+  };
+  changedBy: {
+    userId: number;
+    username: string;
+  };
+}
+
 interface ProjectData {
   ProjectID: number;
   ProjectName: string;
@@ -54,6 +69,9 @@ export default function ProjectDetails() {
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [memberSaving, setMemberSaving] = useState(false);
   const [memberError, setMemberError] = useState('');
+  const [activity, setActivity] = useState<ProjectActivityItem[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityError, setActivityError] = useState('');
 
   useEffect(() => {
     fetchProject();
@@ -77,6 +95,7 @@ export default function ProjectDetails() {
       setEditDesc(data.Description || '');
 
       fetchMembers(token);
+      fetchActivity(token);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -96,6 +115,29 @@ export default function ProjectDetails() {
         setAvailableUsers(mData.availableUsers || []);
       }
     } catch { }
+  };
+
+  const fetchActivity = async (token: string) => {
+    try {
+      setActivityLoading(true);
+      setActivityError('');
+      const res = await fetch(`/api/projects/${projectId}/activity`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setActivityError(data.error || 'Failed to load activity');
+        return;
+      }
+
+      const data = await res.json();
+      setActivity(data.data || []);
+    } catch {
+      setActivityError('Failed to load activity');
+    } finally {
+      setActivityLoading(false);
+    }
   };
 
   const handleAddMember = async () => {
@@ -201,6 +243,30 @@ export default function ProjectDetails() {
     return '#667eea';
   };
 
+  const getActivityIcon = (changeType: string) => {
+    const text = changeType.toLowerCase();
+    if (text.includes('assign')) return '👤';
+    if (text.includes('status')) return '🔄';
+    if (text.includes('priority')) return '⚡';
+    if (text.includes('due')) return '📅';
+    if (text.includes('title') || text.includes('description')) return '📝';
+    if (text.includes('delete')) return '🗑️';
+    return '📌';
+  };
+
+  const formatActivityTime = (dateValue: string) => {
+    const date = new Date(dateValue);
+    const diffMs = Date.now() - date.getTime();
+    const minutes = Math.floor(diffMs / 60000);
+    if (minutes < 1) return 'Just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleString();
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
@@ -279,6 +345,16 @@ export default function ProjectDetails() {
         .modal-btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .modal-btn-secondary { background: var(--gray-100); color: var(--foreground); }
         .modal-btn-danger { background: var(--danger-500); color: white; }
+        .timeline-list { display: flex; flex-direction: column; gap: 0.875rem; }
+        .timeline-item { display: grid; grid-template-columns: 34px 1fr; gap: 0.75rem; }
+        .timeline-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; background: var(--primary-50); color: var(--primary-600); border: 1px solid var(--primary-100); }
+        .timeline-content { background: var(--gray-50); border: 1px solid var(--border-color); border-radius: 12px; padding: 0.75rem 0.875rem; }
+        .timeline-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.35rem; }
+        .timeline-user { font-size: 0.875rem; font-weight: 700; color: var(--foreground); }
+        .timeline-time { font-size: 0.75rem; color: var(--foreground-secondary); white-space: nowrap; }
+        .timeline-action { font-size: 0.8125rem; font-weight: 600; color: var(--foreground); margin-bottom: 0.25rem; }
+        .timeline-task { font-size: 0.75rem; color: var(--foreground-secondary); display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+        .timeline-tag { background: rgba(102,126,234,0.14); color: var(--primary-700); border-radius: 999px; padding: 0.125rem 0.45rem; font-size: 0.6875rem; font-weight: 700; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
 
@@ -394,6 +470,40 @@ export default function ProjectDetails() {
                   View Analytics
                 </Link>
               </div>
+            </div>
+          </div>
+
+          <div className="section-card">
+            <div className="section-header">
+              <div className="section-title"><span>🕒</span> Activity Timeline</div>
+            </div>
+            <div className="section-body">
+              {activityLoading ? (
+                <p style={{ color: 'var(--foreground-secondary)', textAlign: 'center', padding: '1rem 0' }}>Loading activity...</p>
+              ) : activityError ? (
+                <p style={{ color: 'var(--danger-600)', textAlign: 'center', padding: '1rem 0' }}>{activityError}</p>
+              ) : activity.length === 0 ? (
+                <p style={{ color: 'var(--foreground-secondary)', textAlign: 'center', padding: '1rem 0' }}>No activity yet. Updates will appear here when teammates change tasks.</p>
+              ) : (
+                <div className="timeline-list">
+                  {activity.slice(0, 18).map((item) => (
+                    <div key={item.historyId} className="timeline-item">
+                      <div className="timeline-icon">{getActivityIcon(item.changeType)}</div>
+                      <div className="timeline-content">
+                        <div className="timeline-head">
+                          <span className="timeline-user">{item.changedBy.username}</span>
+                          <span className="timeline-time">{formatActivityTime(item.changeTime)}</span>
+                        </div>
+                        <div className="timeline-action">{item.changeType}</div>
+                        <div className="timeline-task">
+                          <span className="timeline-tag">{item.task.listName}</span>
+                          <span>{item.task.title}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
