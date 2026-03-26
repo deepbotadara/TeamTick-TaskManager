@@ -105,7 +105,6 @@ export default function TaskSearch() {
     });
   };
 
-  // Load users for assignee filter and saved searches from localStorage
   useEffect(() => {
     const stored = localStorage.getItem('saved_searches');
     if (stored) {
@@ -176,7 +175,6 @@ export default function TaskSearch() {
     }
   };
 
-  // Live search while typing (debounced)
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q) {
@@ -314,13 +312,11 @@ export default function TaskSearch() {
         }
       `}</style>
 
-      {/* Page Header */}
       <div className="page-header">
         <h1>Task Search & Filters</h1>
         <p>Find tasks quickly with advanced search and filtering options.</p>
       </div>
 
-      {/* Search Section */}
       <div className="search-section">
         <form onSubmit={handleSearch} className="search-bar">
           <div className="search-input-wrapper">
@@ -379,7 +375,6 @@ export default function TaskSearch() {
         </div>
       </div>
 
-      {/* Quick Filters */}
       <div className="quick-filters-section">
         <div className="quick-filters-label">Quick Filters</div>
         <div className="quick-filters">
@@ -390,7 +385,6 @@ export default function TaskSearch() {
         </div>
       </div>
 
-      {/* Saved Searches */}
       <div className="saved-section">
         <div className="saved-header">
           <div className="saved-label">💾 Saved Searches</div>
@@ -409,7 +403,6 @@ export default function TaskSearch() {
         )}
       </div>
 
-      {/* Results */}
       <div className="results-container">
         <div className="results-header">
           <div className="results-title"><span>📋</span> Search Results</div>

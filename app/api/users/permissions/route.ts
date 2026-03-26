@@ -83,7 +83,6 @@ async function isAdmin(userId: number): Promise<boolean> {
   return !!adminRole;
 }
 
-// GET /api/users/permissions
 export async function GET(request: NextRequest) {
   try {
     const auth = await authMiddleware(request);
@@ -138,7 +137,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT /api/users/permissions
 export async function PUT(request: NextRequest) {
   try {
     const auth = await authMiddleware(request);

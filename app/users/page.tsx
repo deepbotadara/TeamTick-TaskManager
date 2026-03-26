@@ -37,7 +37,6 @@ export default function Users() {
   const [permissionsSaving, setPermissionsSaving] = useState(false);
   const [permissionsMessage, setPermissionsMessage] = useState('');
 
-  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
   const [formUsername, setFormUsername] = useState('');
@@ -47,7 +46,6 @@ export default function Users() {
   const [saving, setSaving] = useState(false);
   const [modalError, setModalError] = useState('');
 
-  // Delete confirmation
   const [deletingUserId, setDeletingUserId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -69,7 +67,7 @@ export default function Users() {
       const json = await res.json();
       setUsers(json.data || []);
       setRoles(json.roles || []);
-    } catch { /* ignore */ }
+    } catch { }
     finally { setLoading(false); }
   };
 
@@ -323,7 +321,6 @@ export default function Users() {
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
-      {/* Delete Confirmation */}
       {deletingUserId !== null && (
         <div className="confirm-overlay" onClick={() => setDeletingUserId(null)}>
           <div className="confirm-box" onClick={e => e.stopPropagation()}>
@@ -337,7 +334,6 @@ export default function Users() {
         </div>
       )}
 
-      {/* Create/Edit Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-box" onClick={e => e.stopPropagation()}>
@@ -430,7 +426,6 @@ export default function Users() {
         </div>
       )}
 
-      {/* Permissions Management Panel */}
       <div style={{ marginTop: '2.5rem', background: 'var(--background-secondary)', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

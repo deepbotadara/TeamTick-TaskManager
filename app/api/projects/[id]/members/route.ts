@@ -135,7 +135,6 @@ async function getProjectMembers(projectId: number) {
   };
 }
 
-// GET /api/projects/[id]/members
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -159,7 +158,6 @@ export async function GET(
   }
 }
 
-// POST /api/projects/[id]/members
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -205,7 +203,6 @@ export async function POST(
   }
 }
 
-// DELETE /api/projects/[id]/members?userId=123
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

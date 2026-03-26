@@ -76,7 +76,6 @@ export default function ProjectDetails() {
       setEditName(data.ProjectName);
       setEditDesc(data.Description || '');
 
-      // Also fetch members
       fetchMembers(token);
     } catch (err: any) {
       setError(err.message);
@@ -96,7 +95,7 @@ export default function ProjectDetails() {
         setCreatorId(mData.creatorId || null);
         setAvailableUsers(mData.availableUsers || []);
       }
-    } catch { /* ignore */ }
+    } catch { }
   };
 
   const handleAddMember = async () => {
@@ -424,7 +423,6 @@ export default function ProjectDetails() {
             </div>
           </div>
 
-          {/* Project Member Management */}
           <div className="section-card" style={{ marginTop: '1.5rem' }}>
             <div className="section-header">
               <div className="section-title"><span>👥</span> Project Members</div>

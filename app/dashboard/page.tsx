@@ -44,7 +44,6 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Quick-add state
   const [quickTitle, setQuickTitle] = useState('');
   const [projects, setProjects] = useState<ProjectOption[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | ''>('');
@@ -63,7 +62,6 @@ export default function Dashboard() {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      // Fetch analytics data
       const analyticsRes = await fetch('/api/analytics/dashboard', { headers });
       if (analyticsRes.ok) {
         const analyticsJson = await analyticsRes.json();
@@ -77,7 +75,6 @@ export default function Dashboard() {
         });
       }
 
-      // Fetch my tasks
       const tasksRes = await fetch('/api/tasks/my-tasks', { headers });
       if (tasksRes.ok) {
         const tasksJson = await tasksRes.json();
@@ -85,7 +82,6 @@ export default function Dashboard() {
         setRecentTasks(Array.isArray(tasksArr) ? tasksArr.slice(0, 3) : []);
       }
 
-      // Fetch projects for quick-add
       const projRes = await fetch('/api/projects?limit=100', { headers });
       if (projRes.ok) {
         const projJson = await projRes.json();
@@ -519,13 +515,11 @@ export default function Dashboard() {
         }
       `}</style>
 
-      {/* Header */}
       <div className="dashboard-header">
         <h1>Dashboard</h1>
         <p>Welcome back! Here&apos;s what&apos;s happening with your projects.</p>
       </div>
 
-      {/* Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon stat-icon-blue">📋</div>
@@ -561,9 +555,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Main Content Grid */}
       <div className="main-grid">
-        {/* My Assigned Tasks */}
         <div className="section-card">
           <div className="section-header">
             <div className="section-title">
@@ -615,7 +607,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Activity */}
         <div className="section-card">
           <div className="section-header">
             <div className="section-title">
@@ -651,7 +642,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Task Creation */}
       <div className="section-card quick-add">
         <div className="section-header">
           <div className="section-title">

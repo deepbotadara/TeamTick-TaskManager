@@ -6,7 +6,6 @@ export default function GlobalBackButton() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Hide on entry pages where back navigation is not meaningful.
   if (pathname === '/' || pathname === '/dashboard' || pathname === '/login' || pathname === '/register') {
     return null;
   }
