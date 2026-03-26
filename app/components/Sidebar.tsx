@@ -25,6 +25,12 @@ const TasksIcon = () => (
   </svg>
 );
 
+const CalendarIcon = () => (
+  <svg className="sidebar-link-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10m2 9H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v11a2 2 0 01-2 2z" />
+  </svg>
+);
+
 const SearchIcon = () => (
   <svg className="sidebar-link-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -462,6 +468,13 @@ export default function Sidebar() {
         >
           <TasksIcon />
           <span>My Tasks</span>
+        </Link>
+        <Link
+          href="/calendar"
+          className={`sidebar-link ${isActive('/calendar') ? 'active' : ''}`}
+        >
+          <CalendarIcon />
+          <span>Calendar</span>
         </Link>
         <Link 
           href="/search" 
