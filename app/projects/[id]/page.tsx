@@ -10,6 +10,13 @@ interface ProjectMember {
   email: string;
   taskCount: number;
   completed: number;
+  isCreator?: boolean;
+}
+
+interface AvailableUser {
+  userId: number;
+  username: string;
+  email: string;
 }
 
 interface TaskList {
@@ -41,8 +48,12 @@ export default function ProjectDetails() {
   const [editDesc, setEditDesc] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
   const [creatorId, setCreatorId] = useState<number | null>(null);
   const [showMembers, setShowMembers] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
+  const [memberSaving, setMemberSaving] = useState(false);
+  const [memberError, setMemberError] = useState('');
 
   useEffect(() => {
     fetchProject();
@@ -83,8 +94,70 @@ export default function ProjectDetails() {
         const mData = await mRes.json();
         setMembers(mData.data || []);
         setCreatorId(mData.creatorId || null);
+        setAvailableUsers(mData.availableUsers || []);
       }
     } catch { /* ignore */ }
+  };
+
+  const handleAddMember = async () => {
+    if (!selectedMemberId) return;
+
+    try {
+      setMemberSaving(true);
+      setMemberError('');
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/projects/${projectId}/members`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: parseInt(selectedMemberId, 10) }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setMemberError(data.error || 'Failed to add member');
+        return;
+      }
+
+      setMembers(data.data || []);
+      setAvailableUsers(data.availableUsers || []);
+      setCreatorId(data.creatorId || null);
+      setSelectedMemberId('');
+    } catch {
+      setMemberError('Failed to add member');
+    } finally {
+      setMemberSaving(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId: number) => {
+    try {
+      setMemberSaving(true);
+      setMemberError('');
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/projects/${projectId}/members?userId=${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setMemberError(data.error || 'Failed to remove member');
+        return;
+      }
+
+      setMembers(data.data || []);
+      setAvailableUsers(data.availableUsers || []);
+      setCreatorId(data.creatorId || null);
+    } catch {
+      setMemberError('Failed to remove member');
+    } finally {
+      setMemberSaving(false);
+    }
   };
 
   const handleUpdate = async () => {
@@ -148,6 +221,8 @@ export default function ProjectDetails() {
   }
 
   const totalTasks = project.taskLists.reduce((sum, l) => sum + l.TaskCount, 0);
+  const memberIds = new Set(members.map((member) => member.userId));
+  const addableUsers = availableUsers.filter((user) => !memberIds.has(user.userId));
 
   return (
     <div className="project-details">
@@ -157,7 +232,7 @@ export default function ProjectDetails() {
         .breadcrumb a { color: var(--primary-500); text-decoration: none; transition: color 0.2s; }
         .breadcrumb a:hover { color: var(--primary-600); }
         .project-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; padding: 2rem; color: white; margin-bottom: 2rem; position: relative; overflow: hidden; }
-        .project-header::before { content: ''; position: absolute; inset: 0; background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"); }
+        .project-header::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.14), transparent 45%), radial-gradient(circle at 85% 70%, rgba(255,255,255,0.08), transparent 45%); }
         .project-header-content { position: relative; z-index: 1; }
         .project-header-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
         .project-title { font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; }
@@ -353,15 +428,60 @@ export default function ProjectDetails() {
           <div className="section-card" style={{ marginTop: '1.5rem' }}>
             <div className="section-header">
               <div className="section-title"><span>👥</span> Project Members</div>
-              <button
-                style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary-600)', background: 'none', border: 'none', cursor: 'pointer' }}
-                onClick={() => setShowMembers(!showMembers)}
-              >
-                {showMembers ? 'Hide' : `Show (${members.length})`}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button
+                  style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--primary-600)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  onClick={() => setShowMembers(!showMembers)}
+                >
+                  {showMembers ? 'Hide' : `Show (${members.length})`}
+                </button>
+              </div>
             </div>
             {showMembers && (
               <div className="section-body">
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                  <select
+                    value={selectedMemberId}
+                    onChange={(e) => setSelectedMemberId(e.target.value)}
+                    style={{
+                      flex: 1,
+                      minWidth: '180px',
+                      padding: '0.5rem 0.625rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      background: 'var(--gray-50)',
+                      color: 'var(--foreground)'
+                    }}
+                  >
+                    <option value="">Select user to add</option>
+                    {addableUsers.map((user) => (
+                      <option key={user.userId} value={String(user.userId)}>
+                        {user.username} ({user.email})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleAddMember}
+                    disabled={!selectedMemberId || memberSaving}
+                    style={{
+                      padding: '0.5rem 0.875rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      background: 'var(--primary-500)',
+                      color: '#fff',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      opacity: !selectedMemberId || memberSaving ? 0.6 : 1,
+                    }}
+                  >
+                    {memberSaving ? 'Saving...' : 'Add'}
+                  </button>
+                </div>
+                {memberError && (
+                  <div style={{ marginBottom: '0.75rem', color: 'var(--danger-600)', fontSize: '0.8125rem', fontWeight: 600 }}>
+                    {memberError}
+                  </div>
+                )}
                 {members.length > 0 ? (
                   members.map(m => (
                     <div key={m.userId} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.75rem 0', borderBottom: '1px solid var(--border-color)' }}>
@@ -379,10 +499,29 @@ export default function ProjectDetails() {
                         <div style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--foreground)' }}>{m.taskCount} tasks</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--success-600)' }}>{m.completed} done</div>
                       </div>
+                      {m.userId !== creatorId && (
+                        <button
+                          onClick={() => handleRemoveMember(m.userId)}
+                          disabled={memberSaving}
+                          style={{
+                            marginLeft: '0.5rem',
+                            padding: '0.35rem 0.55rem',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(239,68,68,0.25)',
+                            background: 'rgba(239,68,68,0.08)',
+                            color: 'var(--danger-600)',
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                   ))
                 ) : (
-                  <p style={{ color: 'var(--foreground-secondary)', textAlign: 'center', padding: '1.5rem' }}>No members yet. Assign tasks to users to add them.</p>
+                  <p style={{ color: 'var(--foreground-secondary)', textAlign: 'center', padding: '1.5rem' }}>No members yet. Use the selector above to add project members.</p>
                 )}
               </div>
             )}

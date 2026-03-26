@@ -2,9 +2,11 @@
 
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
+import GlobalBackButton from './GlobalBackButton';
 import ProtectedRoute from './ProtectedRoute';
 import RedirectIfAuthenticated from './RedirectIfAuthenticated';
 import { AuthProvider } from '../contexts/AuthContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
 
 // Pages that don't require authentication (login/register only)
 const publicPages = ['/login', '/register'];
@@ -30,11 +32,14 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
   };
 
   return (
-    <AuthProvider>
-      {!isAuthPage && <Sidebar />}
-      <main className={isAuthPage ? '' : 'main-content'}>
-        {renderContent()}
-      </main>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        {!isAuthPage && <Sidebar />}
+        <main className={isAuthPage ? '' : 'main-content'}>
+          {!isAuthPage && <GlobalBackButton />}
+          {renderContent()}
+        </main>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

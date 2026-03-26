@@ -47,21 +47,28 @@
   --gray-900: #111827;
 
   /* Light Mode */
-  --background: #f8fafc;
+  --background: #ffffff;
   --background-secondary: #ffffff;
-  --foreground: #0f172a;
-  --foreground-secondary: #475569;
-  --border-color: #e2e8f0;
-  --card-bg: rgba(255, 255, 255, 0.8);
-  --card-border: rgba(255, 255, 255, 0.2);
-  --sidebar-bg: linear-gradient(180deg, #1e1b4b 0%, #312e81 50%, #3730a3 100%);
+  --foreground: #1f2937;
+  --foreground-secondary: #6b7280;
+  --border-color: #d1d5db;
+  --card-bg: rgba(255, 255, 255, 1);
+  --card-border: rgba(209, 213, 219, 0.5);
+  --sidebar-bg: #ffffff;
+  --sidebar-foreground: #111827;
+  --sidebar-muted: #4b5563;
+  --sidebar-hover: #f3f4f6;
+  --sidebar-active: #e5e7eb;
+  --sidebar-section-border: #e5e7eb;
+  --sidebar-section-title: #6b7280;
+  --sidebar-logo-bg: #eef2ff;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --gradient-primary: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  --gradient-secondary: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   --gradient-success: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
   --gradient-warning: linear-gradient(135deg, #f2994a 0%, #f2c94c 100%);
-  --gradient-hero: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --gradient-hero: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #eef2ff 100%);
   --gradient-card: linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
 
   /* Shadows */
@@ -73,38 +80,115 @@
   --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* Dark Mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f0f23;
-    --background-secondary: #1a1a2e;
-    --foreground: #f1f5f9;
-    --foreground-secondary: #94a3b8;
-    --border-color: #334155;
-    --card-bg: rgba(30, 30, 50, 0.8);
-    --card-border: rgba(255, 255, 255, 0.1);
-    --gray-50: #1e1e36;
-    --gray-100: #252542;
-    --gray-200: #2d2d4a;
-    --gray-300: #3a3a5c;
-    --gray-400: #8b8fa3;
-    --gray-500: #a0a4b8;
-    --gray-600: #c0c4d6;
-    --gray-700: #252542;
-    --gray-800: #1e1e36;
-    --gray-900: #f1f5f9;
-    --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.25);
-    --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
-  }
+/* Explicit Light Theme Override */
+html.light-theme {
+  --background: #ffffff;
+  --background-secondary: #ffffff;
+  --foreground: #1f2937;
+  --foreground-secondary: #6b7280;
+  --border-color: #d1d5db;
+  --card-bg: rgba(255, 255, 255, 1);
+  --card-border: rgba(209, 213, 219, 0.5);
+  --sidebar-bg: #ffffff;
+  --sidebar-foreground: #111827;
+  --sidebar-muted: #4b5563;
+  --sidebar-hover: #f3f4f6;
+  --sidebar-active: #e5e7eb;
+  --sidebar-section-border: #e5e7eb;
+  --sidebar-section-title: #6b7280;
+  --sidebar-logo-bg: #eef2ff;
+}
 
-  /* Ensure all form elements use dark backgrounds in dark mode */
-  input, textarea, select {
-    background-color: var(--gray-50) !important;
-    color: var(--foreground) !important;
-  }
-  input:focus, textarea:focus, select:focus {
-    background-color: var(--background-secondary) !important;
-  }
+/* Dark Theme Class Override */
+html.dark-theme {
+  --background: #000000;
+  --background-secondary: #0b0b0b;
+  --foreground: #f1f5f9;
+  --foreground-secondary: #94a3b8;
+  --border-color: #27272a;
+  --card-bg: rgba(18, 18, 18, 0.95);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --gray-50: #111111;
+  --gray-100: #18181b;
+  --gray-200: #27272a;
+  --gray-300: #3f3f46;
+  --gray-400: #71717a;
+  --gray-500: #a1a1aa;
+  --gray-600: #d4d4d8;
+  --gray-700: #18181b;
+  --gray-800: #111111;
+  --gray-900: #f1f5f9;
+  --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.2);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --sidebar-bg: #0a0a0a;
+  --sidebar-foreground: #f9fafb;
+  --sidebar-muted: #cbd5e1;
+  --sidebar-hover: #18181b;
+  --sidebar-active: #27272a;
+  --sidebar-section-border: #27272a;
+  --sidebar-section-title: #94a3b8;
+  --sidebar-logo-bg: #1d4ed8;
+}
+
+html.dark-theme input, 
+html.dark-theme textarea, 
+html.dark-theme select {
+  background-color: var(--gray-50) !important;
+  color: var(--foreground) !important;
+}
+
+html.dark-theme input:focus, 
+html.dark-theme textarea:focus, 
+html.dark-theme select:focus {
+  background-color: var(--background-secondary) !important;
+}
+
+/* Dark Theme Component Overrides */
+html.dark-theme .kanban-column {
+  background: var(--gray-800);
+}
+
+html.dark-theme .table th {
+  background: var(--gray-800);
+}
+
+html.dark-theme .table tr:hover td {
+  background: var(--gray-800);
+}
+
+html.dark-theme .btn-secondary:hover {
+  background: var(--gray-100);
+  border-color: var(--gray-300);
+}
+
+html.dark-theme .btn-ghost:hover {
+  background: var(--gray-100);
+  color: var(--foreground);
+}
+
+/* Improve contrast for form elements in light theme */
+html:not(.dark-theme) input,
+html:not(.dark-theme) textarea,
+html:not(.dark-theme) select {
+  background-color: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+html:not(.dark-theme) input:focus,
+html:not(.dark-theme) textarea:focus,
+html:not(.dark-theme) select:focus {
+  border-color: #6366f1;
+  background-color: #ffffff !important;
+}
+
+/* Ensure proper contrast for kanban in light mode */
+html:not(.dark-theme) .kanban-column {
+  background: #f3f4f6;
+}
+
+html:not(.dark-theme) .kanban-column-count {
+  background: #e5e7eb;
+  color: #374151;
 }
 
 /* ========================================
@@ -601,11 +685,12 @@ body {
   bottom: 0;
   width: 280px;
   background: var(--sidebar-bg);
-  color: white;
+  color: var(--sidebar-foreground);
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   z-index: 50;
+  border-right: 1px solid var(--border-color);
 }
 
 .sidebar-logo {
@@ -619,7 +704,7 @@ body {
 .sidebar-logo-icon {
   width: 40px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--sidebar-logo-bg);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -645,20 +730,20 @@ body {
   gap: 0.75rem;
   padding: 0.875rem 1rem;
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--sidebar-muted);
   text-decoration: none;
   font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
+  background: var(--sidebar-hover);
+  color: var(--sidebar-foreground);
 }
 
 .sidebar-link.active {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
+  background: var(--sidebar-active);
+  color: var(--sidebar-foreground);
 }
 
 .sidebar-link-icon {
@@ -670,7 +755,7 @@ body {
 .sidebar-section {
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--sidebar-section-border);
 }
 
 .sidebar-section-title {
@@ -678,7 +763,7 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sidebar-section-title);
   padding: 0 1rem;
   margin-bottom: 0.75rem;
 }
@@ -694,6 +779,36 @@ body {
 
 .page-header {
   margin-bottom: 2rem;
+}
+
+.global-back-wrap {
+  margin-bottom: 1rem;
+}
+
+.global-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--background-secondary);
+  color: var(--foreground);
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.global-back-btn:hover {
+  background: var(--gray-50);
+  border-color: var(--primary-400);
+  color: var(--primary-600);
+}
+
+.global-back-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .page-title {

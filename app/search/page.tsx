@@ -42,8 +42,68 @@ export default function TaskSearch() {
   const [hasSearched, setHasSearched] = useState(false);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveLabel, setSaveLabel] = useState('');
+
+  const buildAutoSearchLabel = (q: string, s: string, p: string, a: string, df: string, dt: string) => {
+    if (q.trim()) {
+      return `Search: ${q.trim().slice(0, 36)}`;
+    }
+
+    const bits: string[] = [];
+    if (p) bits.push(p);
+    if (s) bits.push(s);
+    if (a) {
+      const user = users.find(u => String(u.userId) === a);
+      bits.push(user ? `Assignee ${user.username}` : `Assignee ${a}`);
+    }
+    if (df || dt) bits.push(`Due ${df || '...'} to ${dt || '...'}`);
+
+    return bits.length > 0 ? bits.join(' | ') : 'Search';
+  };
+
+  const autoSaveSearch = (q: string, s: string, p: string, a: string, df: string, dt: string) => {
+    const normalized = {
+      query: q.trim(),
+      status: s,
+      priority: p,
+      assignee: a,
+      dueDateFrom: df,
+      dueDateTo: dt,
+    };
+
+    const searchKey = JSON.stringify(normalized);
+    const label = buildAutoSearchLabel(q, s, p, a, df, dt);
+
+    setSavedSearches((prev) => {
+      const idx = prev.findIndex((item) =>
+        JSON.stringify({
+          query: item.query.trim(),
+          status: item.status,
+          priority: item.priority,
+          assignee: item.assignee,
+          dueDateFrom: item.dueDateFrom,
+          dueDateTo: item.dueDateTo,
+        }) === searchKey
+      );
+
+      let updated: SavedSearch[];
+      if (idx >= 0) {
+        const existing = prev[idx];
+        const moved = [...prev];
+        moved.splice(idx, 1);
+        updated = [{ ...existing, label }, ...moved];
+      } else {
+        const created: SavedSearch = {
+          id: Date.now().toString(),
+          label,
+          ...normalized,
+        };
+        updated = [created, ...prev].slice(0, 20);
+      }
+
+      localStorage.setItem('saved_searches', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Load users for assignee filter and saved searches from localStorage
   useEffect(() => {
@@ -78,6 +138,7 @@ export default function TaskSearch() {
 
     setIsLoading(true);
     setHasSearched(true);
+    autoSaveSearch(q, s, p, a, df, dt);
 
     try {
       const token = localStorage.getItem('token');
@@ -115,6 +176,42 @@ export default function TaskSearch() {
     }
   };
 
+  // Live search while typing (debounced)
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      const hasAnyFilter = !!(statusFilter || priorityFilter || assigneeFilter || dueDateFrom || dueDateTo);
+      if (hasAnyFilter) {
+        handleSearch(undefined, {
+          query: '',
+          status: statusFilter,
+          priority: priorityFilter,
+          assignee: assigneeFilter,
+          dueDateFrom,
+          dueDateTo,
+        });
+      } else {
+        setResults([]);
+        setHasSearched(false);
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      handleSearch(undefined, {
+        query: searchQuery,
+        status: statusFilter,
+        priority: priorityFilter,
+        assignee: assigneeFilter,
+        dueDateFrom,
+        dueDateTo,
+      });
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const applyQuickFilter = (overrides: { query?: string; status?: string; priority?: string }) => {
     setSearchQuery(overrides.query ?? '');
     setStatusFilter(overrides.status ?? '');
@@ -133,25 +230,6 @@ export default function TaskSearch() {
     setDueDateFrom(ss.dueDateFrom);
     setDueDateTo(ss.dueDateTo);
     handleSearch(undefined, { query: ss.query, status: ss.status, priority: ss.priority, assignee: ss.assignee, dueDateFrom: ss.dueDateFrom, dueDateTo: ss.dueDateTo });
-  };
-
-  const saveCurrentSearch = () => {
-    if (!saveLabel.trim()) return;
-    const newSearch: SavedSearch = {
-      id: Date.now().toString(),
-      label: saveLabel.trim(),
-      query: searchQuery,
-      status: statusFilter,
-      priority: priorityFilter,
-      assignee: assigneeFilter,
-      dueDateFrom,
-      dueDateTo
-    };
-    const updated = [...savedSearches, newSearch];
-    setSavedSearches(updated);
-    localStorage.setItem('saved_searches', JSON.stringify(updated));
-    setSaveLabel('');
-    setShowSaveModal(false);
   };
 
   const deleteSavedSearch = (id: string) => {
@@ -210,8 +288,6 @@ export default function TaskSearch() {
         .saved-chip:hover { border-color: var(--primary-400); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.15); }
         .saved-chip-del { background: none; border: none; color: var(--primary-400); cursor: pointer; font-size: 0.875rem; line-height: 1; padding: 0 0 0 0.25rem; }
         .saved-chip-del:hover { color: var(--danger-600); }
-        .btn-save-search { padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 600; color: var(--primary-600); background: var(--primary-50); border: 2px solid var(--primary-200); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-        .btn-save-search:hover { background: var(--primary-100); }
         .results-container { animation: fadeInUp 0.5s ease-out 0.2s backwards; }
         .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
         .results-title { font-size: 1.125rem; font-weight: 700; color: var(--foreground); display: flex; align-items: center; gap: 0.5rem; }
@@ -229,14 +305,6 @@ export default function TaskSearch() {
         .result-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); margin-top: 0.75rem; }
         .result-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; }
         .badge { padding: 0.375rem 0.75rem; border-radius: 8px; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal-box { background: var(--background-secondary); border-radius: 16px; padding: 2rem; width: 90%; max-width: 400px; }
-        .modal-box h3 { font-size: 1.125rem; font-weight: 700; color: var(--foreground); margin-bottom: 1rem; }
-        .modal-input { width: 100%; padding: 0.875rem 1rem; font-size: 1rem; background: var(--background); border: 2px solid var(--border-color); border-radius: 12px; color: var(--foreground); margin-bottom: 1rem; box-sizing: border-box; }
-        .modal-input:focus { outline: none; border-color: var(--primary-500); }
-        .modal-actions { display: flex; gap: 1rem; justify-content: flex-end; }
-        .modal-btn-cancel { padding: 0.75rem 1.5rem; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; background: var(--gray-100); color: var(--foreground); }
-        .modal-btn-save { padding: 0.75rem 1.5rem; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -245,27 +313,6 @@ export default function TaskSearch() {
           .advanced-filters { grid-template-columns: 1fr; }
         }
       `}</style>
-
-      {/* Save Search Modal */}
-      {showSaveModal && (
-        <div className="modal-overlay" onClick={() => setShowSaveModal(false)}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
-            <h3>💾 Save This Search</h3>
-            <input
-              className="modal-input"
-              placeholder="Search name (e.g. 'Urgent Tasks')"
-              value={saveLabel}
-              onChange={e => setSaveLabel(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && saveCurrentSearch()}
-              autoFocus
-            />
-            <div className="modal-actions">
-              <button className="modal-btn-cancel" onClick={() => setShowSaveModal(false)}>Cancel</button>
-              <button className="modal-btn-save" onClick={saveCurrentSearch}>Save</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Page Header */}
       <div className="page-header">
@@ -347,9 +394,6 @@ export default function TaskSearch() {
       <div className="saved-section">
         <div className="saved-header">
           <div className="saved-label">💾 Saved Searches</div>
-          {hasSearched && (
-            <button className="btn-save-search" onClick={() => setShowSaveModal(true)}>+ Save Current Search</button>
-          )}
         </div>
         {savedSearches.length > 0 ? (
           <div className="saved-searches">
@@ -361,7 +405,7 @@ export default function TaskSearch() {
             ))}
           </div>
         ) : (
-          <div style={{ fontSize: '0.875rem', color: 'var(--foreground-secondary)' }}>No saved searches yet. Run a search and click "Save Current Search".</div>
+          <div style={{ fontSize: '0.875rem', color: 'var(--foreground-secondary)' }}>No saved searches yet. Run any search and it will be saved automatically.</div>
         )}
       </div>
 

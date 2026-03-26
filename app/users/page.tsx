@@ -19,12 +19,23 @@ interface UserData {
   taskCount: number;
 }
 
+interface PermissionItem {
+  key: string;
+  label: string;
+  description: string;
+  values: Record<number, boolean>;
+}
+
 export default function Users() {
   const router = useRouter();
   const { user: authUser, isLoading: authLoading } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [roles, setRoles] = useState<RoleOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [permissions, setPermissions] = useState<PermissionItem[]>([]);
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+  const [permissionsSaving, setPermissionsSaving] = useState(false);
+  const [permissionsMessage, setPermissionsMessage] = useState('');
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -44,6 +55,7 @@ export default function Users() {
     if (!authUser) { router.push('/login'); return; }
     if (authUser.role !== 'Admin') { router.push('/dashboard'); return; }
     fetchUsers();
+    fetchPermissions();
   }, [authLoading, authUser]);
 
   const fetchUsers = async () => {
@@ -59,6 +71,82 @@ export default function Users() {
       setRoles(json.roles || []);
     } catch { /* ignore */ }
     finally { setLoading(false); }
+  };
+
+  const fetchPermissions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch('/api/users/permissions', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setPermissionsMessage(json.error || 'Failed to load permissions');
+        return;
+      }
+
+      setPermissions(json.permissions || []);
+      if ((json.roles || []).length > 0) {
+        setRoles(json.roles);
+      }
+      setPermissionsMessage('');
+    } catch {
+      setPermissionsMessage('Failed to load permissions');
+    } finally {
+      setPermissionsLoading(false);
+    }
+  };
+
+  const togglePermission = (permissionKey: string, roleId: number) => {
+    setPermissions(prev => prev.map((item) => {
+      if (item.key !== permissionKey) return item;
+      return {
+        ...item,
+        values: {
+          ...item.values,
+          [roleId]: !item.values[roleId],
+        }
+      };
+    }));
+    setPermissionsMessage('Unsaved permission changes');
+  };
+
+  const savePermissions = async () => {
+    try {
+      setPermissionsSaving(true);
+      const token = localStorage.getItem('token');
+      const updates = permissions.flatMap((item) =>
+        roles.map((role) => ({
+          roleId: role.roleId,
+          permissionKey: item.key,
+          allowed: !!item.values[role.roleId],
+        }))
+      );
+
+      const res = await fetch('/api/users/permissions', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ updates }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        setPermissionsMessage(json.error || 'Failed to save permissions');
+        return;
+      }
+
+      setPermissionsMessage('Permissions saved successfully');
+    } catch {
+      setPermissionsMessage('Failed to save permissions');
+    } finally {
+      setPermissionsSaving(false);
+    }
   };
 
   const openCreateModal = () => {
@@ -344,14 +432,39 @@ export default function Users() {
 
       {/* Permissions Management Panel */}
       <div style={{ marginTop: '2.5rem', background: 'var(--background-secondary)', borderRadius: '16px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '1.375rem' }}>🔐</span>
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '1.375rem' }}>🔐</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--foreground)' }}>Manage Permissions</div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--foreground-secondary)', marginTop: '0.125rem' }}>Role-based access control</div>
+            </div>
+          </div>
           <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--foreground)' }}>Manage Permissions</div>
-            <div style={{ fontSize: '0.8125rem', color: 'var(--foreground-secondary)', marginTop: '0.125rem' }}>Role-based access control overview</div>
+            <button
+              onClick={savePermissions}
+              disabled={permissionsSaving || permissionsLoading || permissions.length === 0}
+              style={{
+                border: 'none',
+                borderRadius: '10px',
+                padding: '0.625rem 1rem',
+                background: 'var(--primary-500)',
+                color: '#fff',
+                fontWeight: 700,
+                cursor: 'pointer',
+                opacity: permissionsSaving || permissionsLoading || permissions.length === 0 ? 0.6 : 1,
+              }}
+            >
+              {permissionsSaving ? 'Saving...' : 'Save Permissions'}
+            </button>
           </div>
         </div>
         <div style={{ padding: '1.5rem', overflowX: 'auto' }}>
+          {permissionsMessage && (
+            <div style={{ marginBottom: '1rem', fontSize: '0.8125rem', color: permissionsMessage.includes('successfully') ? 'var(--success-600)' : 'var(--warning-600)', fontWeight: 700 }}>
+              {permissionsMessage}
+            </div>
+          )}
           <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: '0.875rem' }}>
             <thead>
               <tr>
@@ -362,45 +475,49 @@ export default function Users() {
               </tr>
             </thead>
             <tbody>
-              {([
-                { label: 'View All Projects', admin: true, manager: true, user: false },
-                { label: 'Create Project', admin: true, manager: true, user: false },
-                { label: 'Edit/Delete Project', admin: true, manager: false, user: false },
-                { label: 'View Assigned Tasks', admin: true, manager: true, user: true },
-                { label: 'Create Task', admin: true, manager: true, user: false },
-                { label: 'Edit/Delete Any Task', admin: true, manager: false, user: false },
-                { label: 'Add Comments', admin: true, manager: true, user: true },
-                { label: 'Manage Users', admin: true, manager: false, user: false },
-                { label: 'Assign Roles', admin: true, manager: false, user: false },
-                { label: 'View Analytics', admin: true, manager: false, user: false },
-                { label: 'Search All Tasks', admin: true, manager: true, user: false },
-              ]).map((perm, i) => {
-                const roleMap: Record<string, boolean> = { Admin: perm.admin, Manager: perm.manager, User: perm.user };
+              {permissions.map((perm, i) => {
                 return (
                   <tr key={i} style={{ background: i % 2 === 0 ? 'transparent' : 'var(--gray-50)' }}>
-                    <td style={{ padding: '0.75rem 0.5rem', color: 'var(--foreground)', fontWeight: 500 }}>{perm.label}</td>
+                    <td style={{ padding: '0.75rem 0.5rem', color: 'var(--foreground)', fontWeight: 500 }}>
+                      <div>{perm.label}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--foreground-secondary)', marginTop: '0.125rem' }}>{perm.description}</div>
+                    </td>
                     {roles.map(r => {
-                      const allowed = roleMap[r.roleName] ?? false;
+                      const allowed = !!perm.values[r.roleId];
                       return (
                         <td key={r.roleId} style={{ textAlign: 'center', padding: '0.75rem 0.5rem' }}>
-                          <span style={{
+                          <button
+                            type="button"
+                            onClick={() => togglePermission(perm.key, r.roleId)}
+                            style={{
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             width: 26, height: 26, borderRadius: '50%',
                             background: allowed ? 'rgba(17,153,142,0.12)' : 'rgba(239,68,68,0.08)',
                             color: allowed ? '#11998e' : '#dc2626',
-                            fontSize: '0.875rem', fontWeight: 700
-                          }}>{allowed ? '✓' : '✗'}</span>
+                            fontSize: '0.875rem', fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer'
+                          }}
+                            aria-label={`Toggle ${perm.label} for ${r.roleName}`}
+                          >{allowed ? '✓' : '✗'}</button>
                         </td>
                       );
                     })}
                   </tr>
                 );
               })}
+              {permissionsLoading && (
+                <tr>
+                  <td colSpan={roles.length + 1} style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--foreground-secondary)' }}>
+                    Loading permissions...
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
           <div style={{ marginTop: '1.25rem', fontSize: '0.8125rem', color: 'var(--foreground-secondary)', display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
             <span>ℹ️</span>
-            <span>Permissions are enforced server-side. To change a user's access level, edit their role in the user list above.</span>
+            <span>Use toggles to define what each role can do, then click Save Permissions.</span>
           </div>
         </div>
       </div>

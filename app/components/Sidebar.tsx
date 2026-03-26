@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 // SVG Icons as components
 const DashboardIcon = () => (
@@ -54,9 +55,22 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const SunIcon = () => (
+  <svg className="sidebar-link-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1m-16 0H1m15.364 1.636l.707.707m-11.314 0l-.707.707m11.314-11.314l.707-.707m-11.314 0l-.707-.707M12 5a7 7 0 100 14 7 7 0 000-14z" />
+  </svg>
+);
+
+const MoonIcon = () => (
+  <svg className="sidebar-link-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+  </svg>
+);
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Helper function to check if link is active
@@ -247,6 +261,15 @@ export default function Sidebar() {
             <ProfileIcon />
             <span>Profile</span>
           </Link>
+          <button
+            onClick={toggleTheme}
+            className="sidebar-link"
+            style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer' }}
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+          >
+            {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+            <span>{theme === 'light' ? 'Dark Theme' : 'Light Theme'}</span>
+          </button>
           <button 
             onClick={handleLogout} 
             className="sidebar-link"

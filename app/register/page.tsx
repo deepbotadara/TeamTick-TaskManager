@@ -51,10 +51,12 @@ export default function Register() {
           inset: 0;
           display: flex;
           margin-left: 0 !important;
+          background: var(--background);
         }
         .auth-left {
           flex: 1;
-          background: linear-gradient(135deg, #11998e 0%, #38ef7d 50%, #667eea 100%);
+          background: var(--background-secondary);
+          border-right: 1px solid var(--border-color);
           display: flex;
           flex-direction: column;
           justify-content: center;
@@ -66,7 +68,7 @@ export default function Register() {
           content: '';
           position: absolute;
           inset: 0;
-          background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+          background: radial-gradient(circle at 15% 25%, rgba(99,102,241,0.08), transparent 45%), radial-gradient(circle at 80% 80%, rgba(16,185,129,0.06), transparent 42%);
         }
         .auth-brand {
           position: relative;
@@ -75,7 +77,7 @@ export default function Register() {
         .auth-brand-logo {
           width: 60px;
           height: 60px;
-          background: rgba(255, 255, 255, 0.2);
+          background: var(--gray-100);
           backdrop-filter: blur(10px);
           border-radius: 16px;
           display: flex;
@@ -87,13 +89,13 @@ export default function Register() {
         .auth-brand h1 {
           font-size: 3rem;
           font-weight: 800;
-          color: white;
+          color: var(--foreground);
           margin-bottom: 1rem;
           line-height: 1.1;
         }
         .auth-brand p {
           font-size: 1.25rem;
-          color: rgba(255, 255, 255, 0.8);
+          color: var(--foreground-secondary);
           max-width: 400px;
           line-height: 1.6;
         }
@@ -109,12 +111,12 @@ export default function Register() {
           display: flex;
           align-items: center;
           gap: 1rem;
-          color: rgba(255, 255, 255, 0.9);
+          color: var(--foreground);
         }
         .auth-feature-icon {
           width: 40px;
           height: 40px;
-          background: rgba(255, 255, 255, 0.15);
+          background: var(--gray-100);
           border-radius: 10px;
           display: flex;
           align-items: center;

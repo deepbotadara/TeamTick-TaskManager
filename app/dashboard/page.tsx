@@ -298,73 +298,92 @@ export default function Dashboard() {
           padding: 1rem 1.5rem;
         }
         .task-list {
-          display: flex;
-          flex-direction: column;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 0.75rem;
         }
         .task-item {
-          display: grid;
-          grid-template-columns: 24px 1fr auto;
-          align-items: center;
-          gap: 0.875rem;
-          padding: 0.875rem 0.75rem;
-          margin: 0.25rem -0.75rem;
-          border-bottom: 1px solid var(--border-color);
+          display: block;
+          padding: 0.95rem;
+          background: var(--gray-50);
+          border: 1px solid var(--border-color);
+          border-radius: 14px;
           transition: all 0.2s;
-          border-radius: 10px;
           text-decoration: none;
           color: inherit;
         }
-        .task-item:last-child {
-          border-bottom: none;
-        }
         .task-item:hover {
-          background: var(--gray-50);
-          border-bottom-color: transparent;
+          transform: translateY(-2px);
+          border-color: rgba(99,102,241,0.35);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
         }
-        .task-check {
-          width: 22px;
-          height: 22px;
-          border: 2px solid var(--gray-300);
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s;
+        .task-top {
           display: flex;
-          align-items: center;
-          justify-content: center;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 0.75rem;
+          margin-bottom: 0.5rem;
+        }
+        .task-state {
+          width: 11px;
+          height: 11px;
+          border-radius: 50%;
+          margin-top: 0.28rem;
           flex-shrink: 0;
+          box-shadow: 0 0 0 4px rgba(255,255,255,0.45);
         }
-        .task-check.checked {
-          background: linear-gradient(135deg, #11998e, #38ef7d);
-          border-color: transparent;
-        }
-        .task-check:hover {
-          border-color: var(--primary-500);
-          background: var(--primary-50);
-        }
+        .task-state-completed { background: #10b981; }
+        .task-state-progress { background: #6366f1; }
+        .task-state-pending { background: #f59e0b; }
         .task-info {
           min-width: 0;
+          flex: 1;
         }
         .task-title {
           font-weight: 600;
-          font-size: 0.9375rem;
+          font-size: 0.95rem;
           color: var(--foreground);
-          margin-bottom: 0.2rem;
-          white-space: nowrap;
+          margin-bottom: 0.35rem;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
           overflow: hidden;
-          text-overflow: ellipsis;
         }
         .task-meta {
-          font-size: 0.75rem;
+          font-size: 0.78rem;
           color: var(--foreground-secondary);
           display: flex;
           align-items: center;
-          gap: 0.75rem;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+          margin-bottom: 0.6rem;
+        }
+        .task-meta-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          padding: 0.22rem 0.5rem;
+          border-radius: 999px;
+          background: var(--background-secondary);
+          border: 1px solid var(--border-color);
+        }
+        .task-open {
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: var(--primary-500);
+          white-space: nowrap;
         }
         .task-badges {
           display: flex;
           align-items: center;
           gap: 0.375rem;
-          flex-shrink: 0;
+          flex-wrap: wrap;
+        }
+        .task-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
         }
         .task-badge {
           padding: 0.25rem 0.625rem;
@@ -392,6 +411,12 @@ export default function Dashboard() {
         .priority-dot-high { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,0.5); }
         .priority-dot-medium { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,0.5); }
         .priority-dot-low { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.5); }
+        @media (max-width: 640px) {
+          .task-footer {
+            align-items: flex-start;
+            flex-direction: column;
+          }
+        }
         .activity-list {
           display: flex;
           flex-direction: column;
@@ -551,27 +576,33 @@ export default function Dashboard() {
               {recentTasks.length > 0 ? (
                 recentTasks.map((task) => (
                   <Link href={`/tasks/${task.taskId}`} key={task.taskId} className="task-item">
-                    <div className={`task-check ${task.status === 'Completed' ? 'checked' : ''}`}>
-                      {task.status === 'Completed' && <span style={{ color: 'white', fontSize: '0.7rem', lineHeight: 1 }}>✓</span>}
-                    </div>
-                    <div className="task-info">
-                      <div className="task-title">{task.title}</div>
-                      <div className="task-meta">
-                        <span>📁 {task.projectName}</span>
-                        <span>📅 {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</span>
+                    <div className="task-top">
+                      <span className={`task-state ${
+                        task.status === 'Completed' ? 'task-state-completed' :
+                        task.status === 'In Progress' ? 'task-state-progress' : 'task-state-pending'
+                      }`}></span>
+                      <div className="task-info">
+                        <div className="task-title">{task.title}</div>
+                        <div className="task-meta">
+                          <span className="task-meta-chip">📁 {task.projectName}</span>
+                          <span className="task-meta-chip">📅 {task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No due date'}</span>
+                        </div>
                       </div>
+                      <span className="task-open">Open →</span>
                     </div>
-                    <div className="task-badges">
-                      <span className={`task-badge badge-priority-${(task.priority || 'medium').toLowerCase()}`}>
-                        <span className={`priority-dot priority-dot-${(task.priority || 'medium').toLowerCase()}`}></span>
-                        {task.priority || 'Medium'}
-                      </span>
-                      <span className={`task-badge ${
-                        task.status === 'In Progress' ? 'badge-status-progress' : 
-                        task.status === 'Completed' ? 'badge-status-completed' : 'badge-status-pending'
-                      }`}>
-                        {task.status}
-                      </span>
+                    <div className="task-footer">
+                      <div className="task-badges">
+                        <span className={`task-badge badge-priority-${(task.priority || 'medium').toLowerCase()}`}>
+                          <span className={`priority-dot priority-dot-${(task.priority || 'medium').toLowerCase()}`}></span>
+                          {task.priority || 'Medium'}
+                        </span>
+                        <span className={`task-badge ${
+                          task.status === 'In Progress' ? 'badge-status-progress' :
+                          task.status === 'Completed' ? 'badge-status-completed' : 'badge-status-pending'
+                        }`}>
+                          {task.status}
+                        </span>
+                      </div>
                     </div>
                   </Link>
                 ))

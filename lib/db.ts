@@ -22,7 +22,7 @@ const pool = mysql.createPool(dbConfig);
  * @returns Query results
  */
 export async function query<T = any>(query: string, params?: any[]): Promise<T> {
-  try {
+ try {
     const [results] = await pool.execute(query, params);
     return results as T;
   } catch (error) {
