@@ -1,28 +1,58 @@
+Great direction. If this were my project, I would do 2 things now:
 
-⚠️ Pending Works (Missing from Description)
-Screen-Level Gaps
-Drag-and-Drop on Kanban Board (Screen 5)
+1. Freeze and document what is already improved.
+2. Add 3 to 5 high-impact features that make the project look “complete”, not just “working”.
 
-The Kanban board has button-based status movement (→ In Progress / → Complete), but no actual drag-and-drop functionality. The description explicitly requires drag-and-drop task movement.
-Project Member Management (Screen 4)
+**Changes already done (strong points)**
+1. Light and dark theme support with cleaner contrast.
+2. Replaced image-style backgrounds with icon/CSS-first visuals.
+3. Better Assigned Tasks card format on dashboard.
+4. Global back arrow for easier navigation.
+5. Search improvements:
+   - live search while typing
+   - auto-save searches (no manual save button)
+   - quick filters + saved search reuse
+6. Project member management now supports add/remove.
+7. Permissions management is now editable and savable.
+8. Code cleanup and GitHub push completed.
 
-The Project Details page shows task lists and project info, but no member management panel (add/remove project members, view who's on the project).
-Filter by Assignee & Due Date in Search (Screen 10)
+**What you should do next (priority order)**
 
-The search page filters by priority and status, but no filter by assignee and no filter by due date as specified in the description.
-Save Frequent Searches (Screen 10)
+1. Fix run/dev reliability first
+- Your dev command has been failing repeatedly. This is top priority before adding anything else.
 
-The search page has visual "quick filter chips" (hardcoded: High Priority, In Progress, etc.) but no ability to save custom searches persistently.
-Manage Permissions (Screen 8)
+2. Convert runtime table creation into proper DB migration
+- Membership and permissions should be created by migration scripts, not auto-created in API calls.
+- This is important for professional quality and deployment safety.
 
-User & Role Management supports adding users and assigning roles, but there is no dedicated permissions management (e.g., what each role can do).
-Analytics Gaps (Screen 12)
-Team Workload Distribution – The analytics page shows overall task stats but no per-user/team workload breakdown (who has how many tasks).
+3. Enforce permissions deeply on backend routes
+- Right now UI is improved, but ensure every sensitive API checks permissions/roles.
+- Professor review usually checks this.
 
-Project Progress Tracking – No per-project progress chart or breakdown (e.g., % completion per project).
+4. Add notification system
+- Task assigned, due soon, status changed.
+- This makes the app feel “product-level”.
 
-My Tasks Gap (Screen 9)
-Filter by Due Date – The due date input field is rendered on the My Tasks page but is non-functional (not wired to the API filter).
-Summary Count
-Missing/Incomplete features: 8
-All 12 screens exist, but several have partial implementations compared to the description.
+5. Add timeline/activity feed per project
+- Show who changed what and when.
+- Useful for team collaboration and demo impact.
+
+6. Add calendar view for tasks
+- Month/week view by due date.
+- Big visual plus for project demo.
+
+7. Add export/report feature
+- Export tasks/analytics to CSV or PDF.
+- Good for “business-ready” impression.
+
+8. Add basic test coverage
+- At least API tests for auth, permissions, search filters, member add/remove.
+- Even a few tests improve evaluation quality a lot.
+
+**Best “new feature pack” for quick impact**
+If you want fastest value with least risk, add these 3:
+1. Notifications panel
+2. Calendar task view
+3. CSV export for filtered tasks
+
+If you want, I can now implement one of these directly. My suggestion: start with Notifications panel first.
