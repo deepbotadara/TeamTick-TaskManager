@@ -383,7 +383,7 @@ export default function Register() {
       <div className="auth-left">
         <div className="auth-brand">
           <div className="auth-brand-logo">✓</div>
-          <h1>Join TaskFlow<br />Today</h1>
+          <h1>Join TeamTick<br />Today</h1>
           <p>Create your account and start managing projects like never before.</p>
         </div>
         <div className="auth-features">

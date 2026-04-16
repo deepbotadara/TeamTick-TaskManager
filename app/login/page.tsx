@@ -295,7 +295,7 @@ export default function Login() {
       <div className="auth-left">
         <div className="auth-brand">
           <div className="auth-brand-logo">✓</div>
-          <h1>Welcome to<br />TaskFlow</h1>
+          <h1>Welcome to<br />TeamTick</h1>
           <p>Streamline your workflow, boost productivity, and collaborate seamlessly with your team.</p>
         </div>
         <div className="auth-features">

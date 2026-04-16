@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TaskFlow - Project & Task Management",
+  title: "TeamTick - Project & Task Management",
   description: "A modern project and task management application to streamline your workflow",
 };
 

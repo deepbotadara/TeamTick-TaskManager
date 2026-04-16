@@ -443,7 +443,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">✓</div>
-        <span className="sidebar-logo-text">TaskFlow</span>
+        <span className="sidebar-logo-text">TeamTick</span>
       </div>
 
       {/* Main Navigation */}
